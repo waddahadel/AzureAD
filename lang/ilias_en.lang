@@ -1,0 +1,14 @@
+config_configuration#:#Configuration
+config_configuration_saved#:#Configuration saved
+config_save#:#Save
+config_active#:#Active
+config_provider#:#Provider
+config_secret#:#API Key
+config_login_element_type#:#Login Element Type
+config_login_prompt_type#:#Login Prompt?
+config_logout_scope#:# Logout globally
+config_custom_session#:#Custom Session 
+config_session_duration#:# Session duration(in Seconds)
+config_allow_sync#:# Allow sync
+config_role#:# Default role
+config_uid#:# UID
