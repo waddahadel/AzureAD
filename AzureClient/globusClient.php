@@ -142,13 +142,11 @@ class MinervisAzureClient
      * @param null $issuer
      */
     public function __construct($provider_url = null) {
-        global $DIC;
-	$log=$DIC->logger()->root();
-	$log->info("provider_url_debug".$provider_url);
-	$this->setProviderURL($provider_url);
+        $this->setProviderURL($provider_url);
         $this->setEndpoints();
 
     }
+    
 
     /**
      * @param $provider_url
@@ -159,9 +157,9 @@ class MinervisAzureClient
     private function setEndpoints(){
  
         $providerUrl=$this->providerConfig['providerUrl'];
-        $this->providerConfig['refresh_endpoint']=$providerUrl."/api/token/refresh/";
-        $this->providerConfig['token_endpoint']=$providerUrl."/api/token/";
-        $this->providerConfig['verify_endpoint']=$providerUrl."/api/token/verify/";
+        $this->providerConfig['refresh_endpoint']=$providerUrl."/mitarbeiter/app/azure/v1/refresh/";
+        $this->providerConfig['token_endpoint']=$providerUrl."/mitarbeiter/app/azure/v1/login/";
+        $this->providerConfig['verify_endpoint']=$providerUrl."/mitarbeiter/app/azure/v1/verify/";
     }
 
 
@@ -195,19 +193,19 @@ class MinervisAzureClient
             }
 
           
-            if (!property_exists($token_json, 'access')) {
+            if (!property_exists($token_json, 'jwt')) {
                 throw new MinervisAzureClientException('User did not authorize JWT.');
             }
 
-            $claims = $this->decodeJWT($token_json->access, 1);
+            $claims = $this->decodeJWT($token_json->jwt, 1);
 
 
 
             // Save the id token
-            $this->idToken = $token_json->access;
+            $this->idToken = $token_json->jwt;
 
             // Save the access token
-            $this->accessToken = $token_json->access;
+            $this->accessToken = $token_json->jwt;
 
         }
 
@@ -373,13 +371,15 @@ class MinervisAzureClient
                       
         ];
         $token_params=[
-            'username'=>"admin",
-            'password'=>'osiphahQu7gi5di'
+            'user'=>"a.rashid@globus.net",
+            'password'=>'T?EO%7P23L'
         ];
-        $this->tokenResponse = json_decode($this->fetchURL($token_endpoint, $token_params, $headers));
-        $this->userInfo=$this->decodeJWT($this->tokenResponse->access,1)->content;
-        $this->refreshToken=$this->tokenResponse->refresh;
-        $this->accessToken=$this->tokenResponse->access;
+        $this->tokenResponse = json_decode($this->fetchURL($token_endpoint, $token_params, null));
+        //var_dump($this->tokenResponse);
+        
+        $this->userInfo=$this->decodeJWT($this->tokenResponse->jwt,1);
+        $this->refreshToken=$this->tokenResponse->refreshToken;
+        $this->accessToken=$this->tokenResponse->jwt;
 
         return $this->tokenResponse;
     }
@@ -409,12 +409,12 @@ class MinervisAzureClient
 
         $json = json_decode($this->fetchURL($token_endpoint, $token_params, $headers));
 
-        if (isset($json->access)) {
-            $this->accessToken = $json->access;
+        if (isset($json->jwt)) {
+            $this->accessToken = $json->jwt;
         }
 
-        if (isset($json->refresh)) {
-            $this->refreshToken = $json->refresh;
+        if (isset($json->refreshToken)) {
+            $this->refreshToken = $json->refreshToken;
         }
 
         return $json;
@@ -439,7 +439,7 @@ class MinervisAzureClient
 
         
 
-        $json = json_decode($this->fetchURL($token_endpoint, $token_params, $headers));
+        $json = json_decode($this->fetchURL($token_endpoint, $token_params, null));
 
         if($this->getResponseCode()<>400){
             return false;
@@ -513,8 +513,15 @@ class MinervisAzureClient
         }
 
 
-        $headers = array();
-        $headers[] = 'Content-Type: application/json';
+        
+        if(!isset($headers)){
+            //$headers[] = 'Content-Type: application/json';
+            $headers=array(
+                'Content-Type: application/json',
+                'APIKey:  lUVo6mhdUUdQAaw0tvC49DFWCAG2uLVM'
+                
+            );
+        }
         curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
 
         $output = curl_exec($ch);
@@ -533,6 +540,8 @@ class MinervisAzureClient
 
         // Close the cURL resource, and free system resources
         curl_close($ch);
+        /*$output=json_decode($output);
+        var_dump($output);*/
 
         return $output;
     }
