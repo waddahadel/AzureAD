@@ -29,7 +29,10 @@ class ilAzureADPlugin extends ilAuthPlugin
      * @var self|null
      */
     protected static $instance = null;
-
+    /**
+     * @var \ilLogger | null
+     */
+    protected $logger;
     private $provider=null;
 
 
@@ -51,8 +54,11 @@ class ilAzureADPlugin extends ilAuthPlugin
      */
     public function __construct()
     {
+	global $DIC;
         parent::__construct();
-    }
+	$this->logger = ilLoggerFactory::getLogger('ilAzureADPlugin');
+	$this->logger->info("__construct_called");
+   }
 
 
     /**

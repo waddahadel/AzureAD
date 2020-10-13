@@ -22,7 +22,10 @@ class ilAzureADProvider extends ilAuthProvider implements ilAuthProviderInterfac
    
     private $settings = null;
     private $front_end_credentials;
-    
+    /**
+     * @var \ilLogger
+     */
+    protected $logger;
 
     /**
      * ilAzureADProvider constructor.
@@ -33,7 +36,8 @@ class ilAzureADProvider extends ilAuthProvider implements ilAuthProviderInterfac
         parent::__construct($credentials);
         $this->settings = Config::getInstance();
         $this->front_end_credentials= new ilAzureADFrontendCredentials();
-
+	$this->logger = ilLoggerFactory::getLogger('ilAzureADProvider');
+	$this->logger->info("__construct_provider");
     }
 
     /**
@@ -64,7 +68,12 @@ class ilAzureADProvider extends ilAuthProvider implements ilAuthProviderInterfac
      * @return bool
      */
     public function doAuthentication(\ilAuthStatus $status)
-    {
+	{
+	global $DIC;
+	$log=$DIC->logger()->root();
+	$log->info("root_test_doAuthentication");
+    
+	$this->getLogger()->info("ilAzureADProvider_doAuthentication");
         try {
             $azure = $this->initClient();
             $azure->setRedirectURL(ILIAS_HTTP_PATH . 'Customizing/global/plugins/Services/Authentication/AuthenticationHook/AzureAD/azurepage.php');
@@ -92,10 +101,11 @@ class ilAzureADProvider extends ilAuthProvider implements ilAuthProviderInterfac
 
             $azure->authenticate();
             // user is authenticated, otherwise redirected to authorization endpoint or exception
-            $this->getLogger()->dump($_REQUEST, \ilLogLevel::DEBUG);
+            $this->getLogger()->dump($_REQUEST, \ilLogLevel::INFO);
 
             $claims = $azure->getUserInfo();
             $this->getLogger()->dump($claims, \ilLogLevel::DEBUG);
+	    $this->getLogger()->info("ilAzureADProvider_doAuthentication");
             $status = $this->handleUpdate($status, $claims);
 
             // @todo : provide a general solution for all authentication methods
@@ -177,7 +187,7 @@ class ilAzureADProvider extends ilAuthProvider implements ilAuthProviderInterfac
      */
     private function initClient() : MinervisAzureClient
     {
-       $azure=new MinervisAzureClient("http://testvm2.vpn.minervis.com:443");
+       $azure=new MinervisAzureClient("https://api-test.globus.de");
        return $azure;
     }
 }

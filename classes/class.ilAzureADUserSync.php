@@ -61,6 +61,7 @@ class ilAzureADUserSync
         $this->logger = $DIC->logger()->auth();
         $ilDB=$DIC['ilDB'];
         $this->db=&$ilDB;
+	$this->logger->info("__construct_usersync");
 
         $this->writer = new ilXmlWriter();
 
