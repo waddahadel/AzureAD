@@ -70,7 +70,11 @@ class MinervisAzureClient
         "verify_endpoint"=>"/api/token/verify"  
     );
 
-  
+    
+    /**
+     * @var ilLogger
+     */
+    private $logger = null;
 
     /**
      * @var string if we acquire an access token it will be stored here
@@ -144,6 +148,7 @@ class MinervisAzureClient
     public function __construct($provider_url = null) {
         $this->setProviderURL($provider_url);
         $this->setEndpoints();
+	$this->logger = ilLoggerFactory::getLogger('MinervisAzureClient');
 
     }
     
@@ -159,7 +164,7 @@ class MinervisAzureClient
         $providerUrl=$this->providerConfig['providerUrl'];
         $this->providerConfig['refresh_endpoint']=$providerUrl."/mitarbeiter/app/azure/v1/refresh/";
         $this->providerConfig['token_endpoint']=$providerUrl."/mitarbeiter/app/azure/v1/login/";
-        $this->providerConfig['verify_endpoint']=$providerUrl."/mitarbeiter/app/azure/v1/verify/";
+        $this->providerConfig['verify_endpoint']=$providerUrl."/azure/v1/verify/";
     }
 
 
@@ -349,7 +354,7 @@ class MinervisAzureClient
         $auth_endpoint = $this->getProviderConfigValue('token_endpoint');
         
         $response_type = 'code';
-        $this->commitSession();
+        //$this->commitSession();
         //$this->redirect($auth_endpoint);
     }
 
@@ -366,13 +371,12 @@ class MinervisAzureClient
     public function requestTokens() {
         $token_endpoint = $this->getProviderConfigValue('token_endpoint');
         //$token_endpoint_auth_methods_supported = $this->getProviderConfigValue('token_endpoint_auth_methods_supported', ['client_secret_basic']);
-
         $headers = [
                       
         ];
         $token_params=[
-            'user'=>"a.rashid@globus.net",
-            'password'=>'T?EO%7P23L'
+            'user'=>$_REQUEST['username'],
+            'password'=>$_REQUEST['password']
         ];
         $this->tokenResponse = json_decode($this->fetchURL($token_endpoint, $token_params, null));
         //var_dump($this->tokenResponse);
@@ -509,7 +513,6 @@ class MinervisAzureClient
         if($post_body!==null){
             curl_setopt($ch, CURLOPT_POST, 1);
             curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($post_body));
-            //curl_setopt($ch, CURLOPT_POSTFIELDS, "{\"username\": \"admin\", \"password\": \"osiphahQu7gi5di\"}");
         }
 
 

@@ -57,7 +57,7 @@ class ilAzureADPlugin extends ilAuthPlugin
 	global $DIC;
         parent::__construct();
 	$this->logger = ilLoggerFactory::getLogger('ilAzureADPlugin');
-	$this->logger->info("__construct_called");
+	//$this->logger->info("__construct_called");
    }
 
 

@@ -4,7 +4,7 @@ require_once __DIR__ . "/../vendor/autoload.php";
 
 use srag\Plugins\__AzureAD__\Config\ConfigFormGUI;
 use srag\DIC\AzureAD\DICTrait;
-require_once "Customizing/global/plugins/Services/Authentication/AuthenticationHook/AzureAD/classes/class.ilAzureADSettings.php";
+
 /**
  * Class ilAzureADConfigGUI
  *
@@ -22,10 +22,7 @@ class ilAzureADConfigGUI extends ilPluginConfigGUI
     const CMD_UPDATE_CONFIGURE = "updateConfigure";
     const LANG_MODULE = "config";
     const TAB_CONFIGURATION = "configuration";
-    /**
-     * @var \ilLogger
-     */
-    protected $logger;
+
 
     /**
      * @var \ilAzureADSettings
@@ -36,7 +33,6 @@ class ilAzureADConfigGUI extends ilPluginConfigGUI
      */
     public function __construct()
     {
-	$this->logger = ilLoggerFactory::getLogger('ilAzureADConfigGUI');
 	$this->settings = ilAzureADSettings::getInstance();
     }
 
@@ -91,8 +87,6 @@ class ilAzureADConfigGUI extends ilPluginConfigGUI
     }
 
 
-
-
     /**
      *
      */
@@ -102,47 +96,9 @@ class ilAzureADConfigGUI extends ilPluginConfigGUI
 
         $form = $this->getConfigForm();
 
-	 if (!$form->checkInput()) {
-            ilUtil::sendFailure(
-                $this->lng->txt('err_check_input')
-            );
-        //    $form->setValuesByPost();
-        //    $this->settings($form);
-            return;
-        }
-
-	//$this->logger->dump("getConfigForm_formdata:".$form->getFormFields(), \ilLogLevel::INFO);
-	//$this->logger->info("getConfigForm_provider_data:".$form->getValue('provider'));
         self::output()->output($form);
     }
-    /**
-     * Save settings
-     */
-    protected function saveSettings(ConfigFormGUI $form){
 
-        //if (!$form->checkInput()) {
-          //  ilUtil::sendFailure(
-         //       $this->lng->txt('err_check_input')
-         //   );
-         //   return;
-        //}
-
-        $this->settings->setActive((bool) $form->getInput('activation'));
-        $this->settings->setProvider((string) $form->getInput('provider'));
-        if (strlen($form->getInput('secret')) && strcmp($form->getInput('secret'), '******') !== 0) {
-            $this->settings->setSecret((string) $form->getInput('secret'));
-        }
-//        $this->settings->setLoginElementType((int) $form->getInput('le'));
-
-//        $this->settings->setLogoutScope((int) $form->getInput('logout_scope'));
-//        $this->settings->useCustomSession((bool) $form->getInput('custom_session'));
-//        $this->settings->setSessionDuration((int) $form->getInput('session_duration'));
-//        $this->settings->allowSync((bool) $form->getInput('sync'));
-//        $this->settings->setRole((int) $form->getInput('role'));
-
-        $this->settings->save();
-
-    }
 
     /**
      *
@@ -158,13 +114,9 @@ class ilAzureADConfigGUI extends ilPluginConfigGUI
 
             return;
         }
-	$this->saveSettings($form);
 
         ilUtil::sendSuccess(self::plugin()->translate("configuration_saved", self::LANG_MODULE), true);
 
         self::dic()->ctrl()->redirect($this, self::CMD_CONFIGURE);
     }
-
-
-
 }

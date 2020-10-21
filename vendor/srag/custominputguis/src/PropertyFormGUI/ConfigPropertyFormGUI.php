@@ -46,7 +46,7 @@ abstract class ConfigPropertyFormGUI extends PropertyFormGUI
      *
      * @deprecated
      */
-    protected function getValue(string $key)
+    public function getValue(string $key)
     {
         //return (static::CONFIG_CLASS_NAME)::getField($key);
         return call_user_func(static::CONFIG_CLASS_NAME . "::getField", $key);

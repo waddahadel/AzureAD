@@ -62,15 +62,13 @@ class ConfigFormGUI extends ConfigPropertyFormGUI
             "custom_session"=>      [self::PROPERTY_CLASS    => ilCheckboxInputGUI::class ],
             "session_duration"=>    [self::PROPERTY_CLASS => ilNumberInputGUI::class],
             "allow_sync"=>          [self::PROPERTY_CLASS    => ilCheckboxInputGUI::class],
-            "role"=>                [self::PROPERTY_CLASS => ilNumberInputGUI::class]
-            
+            "role"=>                [self::PROPERTY_CLASS => ilNumberInputGUI::class],
+            "uid"=>                 [self::PROPERTY_CLASS => ilNumberInputGUI::class]
 
         ];
         // TODO: Implement ConfigFormGUI
     }
-    public function getFormFields(){
-	return $this->fields;
-    }
+
 
     /**
      * @inheritDoc

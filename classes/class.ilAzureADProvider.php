@@ -4,10 +4,10 @@ require_once __DIR__ . "/../vendor/autoload.php";
 
 use srag\Plugins\__AzureAD__\Config\Config;
 use srag\DIC\AzureAD\DICTrait;
-include_once("Customizing/global/plugins/Services/Authentication/AuthenticationHook/AzureAD/AzureClient/client.php");
+include_once("Customizing/global/plugins/Services/Authentication/AuthenticationHook/AzureAD/AzureClient/globusClient.php");
 require_once "Customizing/global/plugins/Services/Authentication/AuthenticationHook/AzureAD/classes/class.ilAzureADUserSync.php";
 require_once "Customizing/global/plugins/Services/Authentication/AuthenticationHook/AzureAD/classes/class.ilAzureADFrontendCredentials.php";
-
+require_once "Customizing/global/plugins/Services/Authentication/AuthenticationHook/AzureAD/classes/class.ilAzureADSettings.php";
 
 
 /**
@@ -28,6 +28,11 @@ class ilAzureADProvider extends ilAuthProvider implements ilAuthProviderInterfac
     protected $logger;
 
     /**
+     * @var ilAzureADSettings|null
+     */
+    private $az_settings = null;
+
+    /**
      * ilAzureADProvider constructor.
      * @param ilAuthCredentials $credentials
      */
@@ -35,9 +40,9 @@ class ilAzureADProvider extends ilAuthProvider implements ilAuthProviderInterfac
     {
         parent::__construct($credentials);
         $this->settings = Config::getInstance();
+	$this->az_settings = ilAzureADSettings::getInstance();
         $this->front_end_credentials= new ilAzureADFrontendCredentials();
 	$this->logger = ilLoggerFactory::getLogger('ilAzureADProvider');
-	$this->logger->info("__construct_provider");
     }
 
     /**
@@ -50,7 +55,7 @@ class ilAzureADProvider extends ilAuthProvider implements ilAuthProviderInterfac
         }
 
         $auth_token = ilSession::get('azure_auth_token');
-        $this->getLogger()->info('Using token: ' . $auth_token);
+        //$this->getLogger()->info('Using token: ' . $auth_token);
 
         if (strlen($auth_token)) {
             ilSession::set('azure_auth_token', '');
@@ -71,17 +76,11 @@ class ilAzureADProvider extends ilAuthProvider implements ilAuthProviderInterfac
 	{
 	global $DIC;
 	$log=$DIC->logger()->root();
-	$log->info("root_test_doAuthentication");
-    
-	$this->getLogger()->info("ilAzureADProvider_doAuthentication");
         try {
-            $azure = $this->initClient();
+            $azure = $this->initClient($this->az_settings->getProvider());
             $azure->setRedirectURL(ILIAS_HTTP_PATH . 'Customizing/global/plugins/Services/Authentication/AuthenticationHook/AzureAD/azurepage.php');
 
-            $this->getLogger()->info(
-                'Redirect url is: ' .
-                $azure->getRedirectURL()
-            );
+            //$this->getLogger()->info(                'Redirect url is: ' .                $azure->getRedirectURL()            );
 
             /*$azure->setResponseTypes(
                 [
@@ -98,24 +97,27 @@ class ilAzureADProvider extends ilAuthProvider implements ilAuthProviderInterfac
             );
 
 */
-
+	    //$this->getLogger()->info("before_authenticate_doAuthentication");
             $azure->authenticate();
             // user is authenticated, otherwise redirected to authorization endpoint or exception
-            $this->getLogger()->dump($_REQUEST, \ilLogLevel::INFO);
+//            $this->getLogger()->dump($_REQUEST, \ilLogLevel::INFO);
 
             $claims = $azure->getUserInfo();
-            $this->getLogger()->dump($claims, \ilLogLevel::DEBUG);
-	    $this->getLogger()->info("ilAzureADProvider_doAuthentication");
+//            $this->getLogger()->dump($claims, \ilLogLevel::DEBUG);
             $status = $this->handleUpdate($status, $claims);
 
             // @todo : provide a general solution for all authentication methods
             $_GET['target'] = (string) $this->front_end_credentials->getRedirectionTarget();
             //ilSession::set('azure_auth_token', $azure->getAccessToken());
+//	    $this->getLogger()->info("logout_scope:".$this->settings->getValue("logout_scope") ."  ". Config::LOGOUT_SCOPE_GLOBAL);
             if ($this->settings->getValue("logout_scope") == Config::LOGOUT_SCOPE_GLOBAL) {
-                //$azure->requestTokens();
-
+                $azure->requestTokens();
+	//	$this->getLogger()->info("azure_auth_token:".$azure->getAccessToken());
                 ilSession::set('azure_auth_token', $azure->getAccessToken());
             }
+//	    $this->getLogger()->info("doAuthentication_login_status".$status->getStatus());
+
+
             return true;
         } catch (Exception $e) {
             
@@ -139,13 +141,13 @@ class ilAzureADProvider extends ilAuthProvider implements ilAuthProviderInterfac
             $this->getLogger()->dump($user_info, ilLogLevel::ERROR);
             $status->setStatus(ilAuthStatus::STATUS_AUTHENTICATION_FAILED);
             $status->setReason('err_wrong_login');
-            return false;
+            return $status;
         }
 
         //$uid_field = $this->settings->getUidField();
         $ext_account = $user_info->name;
 
-        $this->getLogger()->info('Authenticated external account: ' . $ext_account);
+        $this->getLogger()->debug('Authenticated external account: ' . $ext_account);
 
 
         $int_account = ilObjUser::_checkExternalAuthAccount(
@@ -167,6 +169,7 @@ class ilAzureADProvider extends ilAuthProvider implements ilAuthProviderInterfac
             $sync->updateUser();
 
             $user_id = $sync->getUserId();
+	    //$this->getLogger()->info('sync_getUserId ' . $user_id);
             ilSession::set('used_external_auth', true);
             $status->setAuthenticatedUserId($user_id);
             $status->setStatus(ilAuthStatus::STATUS_AUTHENTICATED);
@@ -174,6 +177,7 @@ class ilAzureADProvider extends ilAuthProvider implements ilAuthProviderInterfac
             // @todo : provide a general solution for all authentication methods
             $_GET['target'] = (string) $this->front_end_credentials->getRedirectionTarget();
         } catch (Exception $e) {
+//	    $this->getLogger()->info('exception_thrown: '.$e->getTraceAsString() );
             throw $e;
             $status->setStatus(ilAuthStatus::STATUS_AUTHENTICATION_FAILED);
             $status->setReason('err_wrong_login');
@@ -185,9 +189,9 @@ class ilAzureADProvider extends ilAuthProvider implements ilAuthProviderInterfac
     /**
      * @return MinervisAzureClient
      */
-    private function initClient() : MinervisAzureClient
+    private function initClient(string $base_url) : MinervisAzureClient
     {
-       $azure=new MinervisAzureClient("https://api-test.globus.de");
+       $azure=new MinervisAzureClient($base_url);
        return $azure;
     }
 }

@@ -61,7 +61,7 @@ class ilAzureADUserSync
         $this->logger = $DIC->logger()->auth();
         $ilDB=$DIC['ilDB'];
         $this->db=&$ilDB;
-	$this->logger->info("__construct_usersync");
+//	$this->logger->info("__construct_usersync");
 
         $this->writer = new ilXmlWriter();
 
@@ -108,7 +108,7 @@ class ilAzureADUserSync
      */
     public function updateUser()
     {
-        $this->logger->info("Session duration ".$this->settings->getValue("session_duration"));
+        //$this->logger->info("Session duration ".$this->settings->getValue("session_duration"));
         // if ($this->needsCreation() && !$this->settings->getValue("allow_sync")) {
         //     throw new /*AzureADSyncForbidden*/ Exception('No internal account given.');
         // }
@@ -173,8 +173,10 @@ class ilAzureADUserSync
             $this->writer->xmlElement('TimeLimitUntil', array(), time());
         }
 
+	//$this->logger->info("transformToXml_user_info:".print_r($this->user_info, true));
+
         foreach ($this->user_info as $field => $value) {
-            
+       	    
             if (!$value) {
                 $this->logger->debug('Ignoring unconfigured field: ' . $field);
                 continue;
@@ -185,22 +187,22 @@ class ilAzureADUserSync
             }
 
             //$value = $this->valueFrom($connect_name);
-            if (!strlen($value)) {
+            if (!is_array($value) && !strlen($value)) {
                 $this->logger->debug('Cannot find user data in ' . $field);
                 continue;
             }
 
             switch ($field) {
-                case 'firstname':
+                case 'given_name':
                     $this->writer->xmlElement('Firstname', [], $value);
                     break;
-                case 'displayName':
+                case 'name':
                     $names=$this->split_name($value);
                     $this->writer->xmlElement('Firstname', [], $names[0]);
                     $this->writer->xmlElement('Firstname', [], $names[1]);
                     break;
 
-                case 'lastname':
+                case 'family_name':
                     $this->writer->xmlElement('Lastname', [], $value);
                     break;
 
@@ -210,23 +212,16 @@ class ilAzureADUserSync
                 case 'department':
                     $this->writer->xmlElement('Department', [], $value);                    
 
-                case 'companyName':
-                    $this->writer->xmlElement('Institution', [], $value);
+                case 'Company':
+                    $this->writer->xmlElement('Company', [], $value);
                     break;
 
-                case 'employeedId':
-                    $defs=$this->getDefinitions("PERNR");
-                    if(isset($defs)){
-                        $pernr=$defs[0];
-                    }
-                    $attributes=array(
-                        "Id"=>$pernr['il_id'],
-                        "Name"=>"PERNR"
-                    );
-                    $this->writer->xmlElement('UserDefinedField',$attributes, $value);
+                case 'Employee-ID':
+                    
+                    $this->writer->xmlElement('Employee-ID', $value);
                     break;
-                case 'mailNickName':
-                    $this->writer->xmlElement('login',[], $value);
+                case 'unique_name':
+                    $this->writer->xmlElement('login', $value);
                     break;
                     
                     
@@ -245,7 +240,7 @@ class ilAzureADUserSync
         $this->writer->xmlEndTag('User');
         $this->writer->xmlEndTag('Users');
 
-        $this->logger->debug($this->writer->xmlDumpMem());
+       // $this->logger->info("xmlDumpMem: ".$this->writer->xmlDumpMem());
     }
 
 
