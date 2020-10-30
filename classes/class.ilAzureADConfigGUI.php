@@ -129,7 +129,7 @@ class ilAzureADConfigGUI extends ilPluginConfigGUI
 
         $this->settings->setActive((bool) $form->getInput('activation'));
         $this->settings->setProvider((string) $form->getInput('provider'));
-        if (strlen($form->getInput('secret')) && strcmp($form->getInput('secret'), '******') !== 0) {
+        if (strlen($form->getInput('secret')) !== 0) {
             $this->settings->setSecret((string) $form->getInput('secret'));
         }
 //        $this->settings->setLoginElementType((int) $form->getInput('le'));

@@ -145,8 +145,9 @@ class MinervisAzureClient
      * @param $client_secret string optional
      * @param null $issuer
      */
-    public function __construct($provider_url = null) {
+    public function __construct($provider_url = null, $api_key = null) {
         $this->setProviderURL($provider_url);
+	$this->setSecret($api_key);
         $this->setEndpoints();
 	$this->logger = ilLoggerFactory::getLogger('MinervisAzureClient');
 
@@ -159,12 +160,19 @@ class MinervisAzureClient
     public function setProviderURL($provider_url) {
         $this->providerConfig['providerUrl'] = $provider_url;
     }
+    /**
+     * @param $secret
+     */
+    public function setSecret($secret) {
+        $this->providerConfig['secret'] = $secret;
+    }
+
     private function setEndpoints(){
  
         $providerUrl=$this->providerConfig['providerUrl'];
-        $this->providerConfig['refresh_endpoint']=$providerUrl."/mitarbeiter/app/azure/v1/refresh/";
-        $this->providerConfig['token_endpoint']=$providerUrl."/mitarbeiter/app/azure/v1/login/";
-        $this->providerConfig['verify_endpoint']=$providerUrl."/azure/v1/verify/";
+        $this->providerConfig['refresh_endpoint']=$providerUrl."/ilias/app/azure/v1/refresh";
+        $this->providerConfig['token_endpoint']=$providerUrl."/ilias/app/azure/v1/login";
+        $this->providerConfig['verify_endpoint']=$providerUrl."/ilias/app/azure/v1/verify";
     }
 
 
@@ -273,7 +281,6 @@ class MinervisAzureClient
      *
      */
     protected function getProviderConfigValue($param, $default = null) {
-
         return $this->providerConfig[$param];
     }
 
@@ -521,7 +528,7 @@ class MinervisAzureClient
             //$headers[] = 'Content-Type: application/json';
             $headers=array(
                 'Content-Type: application/json',
-                'APIKey:  lUVo6mhdUUdQAaw0tvC49DFWCAG2uLVM'
+                'APIKey: '. $this->getProviderConfigValue('secret')
                 
             );
         }

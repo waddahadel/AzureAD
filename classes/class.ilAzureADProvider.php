@@ -77,7 +77,8 @@ class ilAzureADProvider extends ilAuthProvider implements ilAuthProviderInterfac
 	global $DIC;
 	$log=$DIC->logger()->root();
         try {
-            $azure = $this->initClient($this->az_settings->getProvider());
+	    //$this->getLogger()->info('test_secret_2'. $this->az_settings->getSecret());
+            $azure = $this->initClient($this->az_settings->getProvider(),$this->az_settings->getSecret());
             $azure->setRedirectURL(ILIAS_HTTP_PATH . 'Customizing/global/plugins/Services/Authentication/AuthenticationHook/AzureAD/azurepage.php');
 
             //$this->getLogger()->info(                'Redirect url is: ' .                $azure->getRedirectURL()            );
@@ -189,9 +190,9 @@ class ilAzureADProvider extends ilAuthProvider implements ilAuthProviderInterfac
     /**
      * @return MinervisAzureClient
      */
-    private function initClient(string $base_url) : MinervisAzureClient
+    private function initClient(string $base_url, string $secret) : MinervisAzureClient
     {
-       $azure=new MinervisAzureClient($base_url);
+       $azure=new MinervisAzureClient($base_url, $secret);
        return $azure;
     }
 }
