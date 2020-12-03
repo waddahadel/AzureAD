@@ -98,7 +98,7 @@ class ilAzureADUserSync
      */
     public function needsCreation() : bool
     {
-        $this->logger->dump($this->int_account, \ilLogLevel::DEBUG);
+        $this->logger->dump($this->int_account, \ilLogLevel::INFO);
         return strlen($this->int_account) == 0;
     }
 
@@ -131,6 +131,7 @@ class ilAzureADUserSync
             self::AUTH_MODE,
             $this->ext_account
         );
+//	$this->logger->info("updateUser_int_account:".print_r($int_account, true));
         $this->setInternalAccount($int_account);
         return true;
     }
@@ -171,35 +172,35 @@ class ilAzureADUserSync
             $this->writer->xmlElement('TimeLimitUnlimited', array(), 1);
             $this->writer->xmlElement('TimeLimitFrom', array(), time());
             $this->writer->xmlElement('TimeLimitUntil', array(), time());
-        }
-
-	//$this->logger->info("transformToXml_user_info:".print_r($this->user_info, true));
+	}
+//	$this->logger->info("transformToXml_user_info:".print_r($this->user_info, true));
 
         foreach ($this->user_info as $field => $value) {
-       	    
+//	    $this->logger->info("transformToXml_field:".$field ." _value:". $value);
             if (!$value) {
-                $this->logger->debug('Ignoring unconfigured field: ' . $field);
+                $this->logger->info('Ignoring unconfigured field: ' . $field);
                 continue;
             }
             if (!$this->needsCreation()) {
-                $this->logger->debug('Ignoring ' . $field . ' for update.');
+                $this->logger->info('Ignoring ' . $field . ' for update.');
                 continue;
             }
 
             //$value = $this->valueFrom($connect_name);
             if (!is_array($value) && !strlen($value)) {
-                $this->logger->debug('Cannot find user data in ' . $field);
+                $this->logger->info('Cannot find user data in ' . $field);
                 continue;
             }
-
+	    //$this->logger->info("transformToXml__field:".$field);
             switch ($field) {
-                case 'given_name':
-                    $this->writer->xmlElement('Firstname', [], $value);
-                    break;
+                //case 'given_name':
+                //    $this->writer->xmlElement('Firstname', [], $value);
+                //    break;
                 case 'name':
                     $names=$this->split_name($value);
+//		    $this->logger->info("transformToXml_user_info_name:".print_r($names));
                     $this->writer->xmlElement('Firstname', [], $names[0]);
-                    $this->writer->xmlElement('Firstname', [], $names[1]);
+                    //$this->writer->xmlElement('Firstname', [], $names[1]);
                     break;
 
                 case 'family_name':
@@ -218,10 +219,10 @@ class ilAzureADUserSync
 
                 case 'Employee-ID':
                     
-                    $this->writer->xmlElement('Employee-ID', $value);
+                    $this->writer->xmlElement('Employee-ID',[], $value);
                     break;
                 case 'unique_name':
-                    $this->writer->xmlElement('login', $value);
+                    $this->writer->xmlElement('Login',[], $value);
                     break;
                     
                     
@@ -240,7 +241,7 @@ class ilAzureADUserSync
         $this->writer->xmlEndTag('User');
         $this->writer->xmlEndTag('Users');
 
-       // $this->logger->info("xmlDumpMem: ".$this->writer->xmlDumpMem());
+  //      $this->logger->info("xmlDumpMem: ".$this->writer->xmlDumpMem());
     }
 
 

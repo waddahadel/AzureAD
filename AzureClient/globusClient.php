@@ -389,7 +389,8 @@ class MinervisAzureClient
         //var_dump($this->tokenResponse);
         
         $this->userInfo=$this->decodeJWT($this->tokenResponse->jwt,1);
-        $this->refreshToken=$this->tokenResponse->refreshToken;
+//        $this->logger->info('requestTokens_userInfo: '.print_r($this->userInfo, true) );
+	$this->refreshToken=$this->tokenResponse->refreshToken;
         $this->accessToken=$this->tokenResponse->jwt;
 
         return $this->tokenResponse;
