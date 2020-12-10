@@ -3,6 +3,7 @@
  * Class ilAzureADSettings
  *
  * @author Shaharyar Ali Bhatti <shaharyar.bhatti@minervis.com>
+ * @author Jephte Abijuru <jephte.abijuru@minervis.com>
  *
  *
  */
@@ -50,7 +51,7 @@ class ilAzureADSettings{
     /**
      * @var int
      */
-    private $logout_scope;
+    private $logout_scope=self::LOGOUT_SCOPE_GLOBAL;
     /**
      * @var bool
      */
@@ -64,12 +65,27 @@ class ilAzureADSettings{
     /**
      * @var bool
      */
-    private $allow_sync;
+    private $allow_sync=1;
+
+    /** 
+     *@var int
+    */
+    private $connection_id=0;
 
     /**
      * @var int
      */
-    private $role;
+    private $role=0;
+
+    /** @var Container $dic */
+    private $dic;
+    /** @var ilDB $db */
+    private $db;
+
+
+    private $values;
+    
+
 
     /**
      * ilAzureADSettings constructor.
@@ -77,9 +93,8 @@ class ilAzureADSettings{
     private function __construct()
     {
         global $DIC;
-
-        $this->storage = new ilSetting(self::STORAGE_ID);
-        $this->filesystem = $DIC->filesystem()->web();
+        $this->dic=$DIC;
+        $this->db=$DIC->database();
         $this->load();
     }
 
@@ -89,11 +104,87 @@ class ilAzureADSettings{
      */
     public static function getInstance() : \ilAzureADSettings
     {
-        if (!self::$instance) {
-            self::$instance = new self();
+        if (self::$instance ) {
+            return self::$instance;
         }
-        return new self::$instance;
+        return self::$instance=new ilAzureADSettings();
     }
+
+    public function create()
+    {
+        $this->save();
+    }
+
+    /**
+     * @param bool $update
+     */
+
+    public function save()
+    {
+        global $ilDB;
+
+        // check if data exisits decide to update or insert
+        $result = $ilDB->query("SELECT * FROM auth_authhk_azuread");
+        $num = $ilDB->numRows($result);
+
+        $a_data=array(
+            'active' =>['integer',$this->ilBoolToInt($this->getActive())],
+            'provider' => ['string', $this->getProvider()],
+            'secret'   => ['string', $this->getSecret()],
+            'logout_scope' => ['integer', (int)$this->getLogoutScope()],
+            'is_custom_session'=>['integer', $this->ilBoolToInt($this->isCustomSession())],
+            'session_duration' =>['integer',$this->getSessionDuration()],
+            'role' =>['integer', $this->getRole()],
+            'sync_allowed' =>['integer',$this->ilBoolToInt($this->isSyncAllowed())]
+        );
+        if($num !== 0){
+            $ilDB->update('auth_authhk_azuread', $a_data,array('id' => array('integer', $this->connection_id)));
+        }else{
+            $ilDB->insert('auth_authhk_azuread', $a_data);
+        }
+
+       
+
+
+    }
+
+    
+    /**
+     * read
+     *
+     * @return void
+     */
+    public function read()
+    {
+        global $ilDB;
+        //$values=array()
+        $result=$ilDB->query("SELECT * FROM auth_authhk_azuread");
+        while($record=$ilDB->fetchAssoc($result)) {
+            $active=$this->ilIntToBool($record['active']);
+            $this->setActive($active);
+            $this->setProvider($record['provider']);
+            $this->setSecret($record['secret']);
+            $this->setLogoutScope($record['logout_scope']);
+            $this->useCustomSession($this->ilIntToBool($record['is_custom_session']));
+            $this->setSessionDuration($record['session_duration']);
+            $this->setRole($record['role']);
+            $sync=$this->ilIntToBool($record['sync_allowed']);
+            $this->syncAllowed($sync!=null?$sync:1);
+            $this->connection_id = $record['id'];
+            $this->values=$record;
+        }
+    }
+    
+    /**
+     * getValues
+     *
+     * @return void
+     */
+    public function getValues()
+    {
+        return $this->values;
+    }
+
 
 
     /**
@@ -234,7 +325,7 @@ class ilAzureADSettings{
     /**
      * @param bool $a_stat
      */
-    public function allowSync(bool $a_stat)
+    public function syncAllowed(bool $a_stat)
     {
         $this->allow_sync = $a_stat;
     }
@@ -254,40 +345,42 @@ class ilAzureADSettings{
     {
         return $this->role;
     }
-
+    
     /**
-     * Save in settings
+     * ilBoolToInt
+     *
+     * @param  mixed $a_val
+     * @return void
      */
-    public function save()
+    private function ilBoolToInt($a_val) 
     {
-        $this->storage->set('active', (int) $this->getActive());
-        $this->storage->set('provider', $this->getProvider());
-        $this->storage->set('secret', $this->getSecret());
-        $this->storage->set('le_type', $this->getLoginElementType());
-        $this->storage->set('prompt_type', $this->getLoginPromptType());
-        $this->storage->set('logout_scope', $this->getLogoutScope());
-        $this->storage->set('custom_session', (int) $this->isCustomSession());
-        $this->storage->set('session_duration', (int) $this->getSessionDuration());
-        $this->storage->set('allow_sync', (int) $this->isSyncAllowed());
-        $this->storage->set('role', (int) $this->getRole());
-
+		if ($a_val == true) return 1;
+		return 0;
     }
+    	
+	/**
+	 * ilIntToBool
+	 *
+	 * @param  mixed $a_val
+	 * @return void
+	 */
+    private function ilIntToBool($a_val) 
+    {
+		if ($a_val == 1) return true;
+		return false;
+	}
 
+
+
+    
     /**
-     * Load from settings
+     * load
+     *
+     * @return void
      */
     protected function load()
     {
-        $this->setActive((bool) $this->storage->get('active', 0));
-        $this->setProvider($this->storage->get('provider', ''));
-        $this->setSecret($this->storage->get('secret', ''));
-        $this->setLoginElementType($this->storage->get('le_type'));
-        $this->setLoginPromptType((int) $this->storage->get('prompt_type', self::LOGIN_ENFORCE));
-        $this->setLogoutScope((int) $this->storage->get('logout_scope', self::LOGOUT_SCOPE_GLOBAL));
-        $this->useCustomSession((bool) $this->storage->get('custom_session'), false);
-        $this->setSessionDuration((int) $this->storage->get('session_duration', 60));
-        $this->allowSync((bool) $this->storage->get('allow_sync'), false);
-        $this->setRole((int) $this->storage->get('role'), 0);
+        $this->read(); //for code compatibility: remove later
     }
 
 

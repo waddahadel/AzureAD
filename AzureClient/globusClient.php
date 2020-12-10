@@ -64,13 +64,11 @@ class MinervisAzureClient
 
     
     private $providerConfig = array();
-    private $paths=array(
-        'refresh_endpoint'=>"/api/token/refresh/",
-        'token_endpoint'=>   "/api/token/",
-        "verify_endpoint"=>"/api/token/verify"  
-    );
 
-    
+    /**
+     * @var string arbitrary secret value
+     */
+    private $secret;
     /**
      * @var ilLogger
      */
@@ -145,10 +143,11 @@ class MinervisAzureClient
      * @param $client_secret string optional
      * @param null $issuer
      */
-    public function __construct($provider_url = null) {
+    public function __construct($provider_url = null, $secret=null) {
         $this->setProviderURL($provider_url);
         $this->setEndpoints();
-	$this->logger = ilLoggerFactory::getLogger('MinervisAzureClient');
+        $this->setSecret($secret);
+	    $this->logger = ilLoggerFactory::getLogger('MinervisAzureClient');
 
     }
     
@@ -159,12 +158,30 @@ class MinervisAzureClient
     public function setProviderURL($provider_url) {
         $this->providerConfig['providerUrl'] = $provider_url;
     }
+    
+    /**
+     * setSecret
+     *
+     * @param  string  $secret
+     * @return void
+     */
+    public function setSecret($secret){
+        $this->providerConfig['secret'] = $secret;
+    }
+
+    
     private function setEndpoints(){
  
         $providerUrl=$this->providerConfig['providerUrl'];
-        $this->providerConfig['refresh_endpoint']=$providerUrl."/mitarbeiter/app/azure/v1/refresh/";
-        $this->providerConfig['token_endpoint']=$providerUrl."/mitarbeiter/app/azure/v1/login/";
-        $this->providerConfig['verify_endpoint']=$providerUrl."/azure/v1/verify/";
+        $this->providerConfig['refresh_endpoint']=$providerUrl."/ilias/app/azure/v1/refresh";
+        $this->providerConfig['token_endpoint']=$providerUrl."/ilias/app/azure/v1/login";
+        $this->providerConfig['verify_endpoint']=$providerUrl."/ilias/app/azure/v1/verify";
+    }
+
+    public function configureInternalProxy(){
+        $this->getProviderConfigValue['http_proxy']="www-proxy.vpn.minervis.com:3128/";
+        $this->getProviderConfigValue['https_proxy'] = "www-proxy.vpn.minervis.com:3128/";
+
     }
 
 
@@ -381,10 +398,9 @@ class MinervisAzureClient
         $this->tokenResponse = json_decode($this->fetchURL($token_endpoint, $token_params, null));
         //var_dump($this->tokenResponse);
         
-        $this->userInfo=$this->decodeJWT($this->tokenResponse->jwt,1);
-        $this->refreshToken=$this->tokenResponse->refreshToken;
-        $this->accessToken=$this->tokenResponse->jwt;
-
+        $decodedJWT=json_decode(json_encode($this->decodeJWT($this->tokenResponse->jwt,1)),true);
+        $content=json_decode(json_encode($this->tokenResponse->content), true);
+        $this->userInfo = (object) array_merge($decodedJWT,$content);
         return $this->tokenResponse;
     }
 
@@ -506,7 +522,7 @@ class MinervisAzureClient
         
 
 
-        // OK cool - then let's create a new cURL resource handle
+        $proxy="www-proxy.vpn.minervis.com:3128";
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $url);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
@@ -514,14 +530,14 @@ class MinervisAzureClient
             curl_setopt($ch, CURLOPT_POST, 1);
             curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($post_body));
         }
-
-
+        curl_setopt($ch, CURLOPT_PROXY, $proxy);
+        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
         
         if(!isset($headers)){
-            //$headers[] = 'Content-Type: application/json';
             $headers=array(
                 'Content-Type: application/json',
-                'APIKey:  lUVo6mhdUUdQAaw0tvC49DFWCAG2uLVM'
+                'APIKey:  '. $this->getProviderConfigValue('secret')
                 
             );
         }

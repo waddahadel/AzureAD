@@ -1,3 +1,25 @@
-config_configuration#:#Konfiguration
-config_configuration_saved#:#Konfiguration gespeichert
-config_save#:#Speichern
+#:#Globus AzureAD
+azure#:#Globus AzureAD
+configuration#:#Konfiguration
+configuration_saved#:#Konfiguration gespeichert
+save#:#Speichern
+active#:#Aktiv
+provider#:#Server-URL
+confif_provider_info#:# Info
+secret#:#API Key
+secret_info#:# Info
+login_element_type#:#Login Element Type
+login_prompt_type#:#Login Prompt?
+logout_scope#:# Verhalten beim Abmelden (Experimentell)
+logout_scope_info#:#
+is_custom_session#:#Einstellungen zur Sitzungsdauer(Experimentell)
+is_custom_session_option#:#Eigene Sitzungsdauer
+session_duration#:# Sitzungsdauer
+sync_allowed#:# Automatische Synchronisierung
+role#:# Rollenzuordnung
+links_select_one#:# Bitte wählen Sie eine globale Rolle für neu anzulegende ILIAS-Benutzer
+link_select_one_info#:#
+minutes#:# Minuten
+logout_scope_global#:#Global abmelden
+logout_scope_ilias#:# Nur bei ILIAS abmelden
+saving_invoked#:# Die Änderungen wurden erfolgreich gespeichert

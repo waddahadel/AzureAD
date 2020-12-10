@@ -1,10 +1,9 @@
 <?php
-/* Copyright (c) 1998-2009 ILIAS open source, Extended GPL, see docs/LICENSE */
 
 /**
  * event listener
  *
- * @author Stefan Meyer <smeyer.ilias@gmx.de>
+ * @author Jephte Abijuru <jephte.abijuru@minervis.com>
  */
 class ilAzureADAppEventListener
 {

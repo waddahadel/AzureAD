@@ -1,4 +1,60 @@
 <#1>
 <?php
-\srag\Plugins\__AzureAD__\Config\Config::updateDB();
+if(!$ilDB->tableExists('auth_authhk_azuread')){
+	$fields_conf = array(
+			'id' => array(
+					'type' => 'integer',
+					'length' => 4,
+					'notnull' => true
+            ),
+			'active' => array(
+                'type' => 'integer',
+                'length' => 1,
+                'notnull' => true
+             ),
+			'secret' => array(
+					'type' => 'text',
+					'length' => 256,
+					'notnull' => true
+            ),
+			'provider' => array(
+                'type' => 'text',
+                'length' => 256,
+                'notnull' => true
+            ),
+			'session_duration' => array(
+					'type' => 'integer',
+					'length' => 8,
+					'notnull' => true,
+					'default' =>5
+			),
+			'logout_scope' => array(
+					'type' => 'integer',
+					'length' => 1,
+					'notnull' => true,
+					'default' =>0
+            ),
+			'sync_allowed' => array(
+                'type' => 'integer',
+                'length' => 1,
+				'notnull' => true,
+				'default' => 1
+            ),
+			'is_custom_session' => array(
+                'type' => 'integer',
+                'length' => 1,
+                'notnull' => true
+            ),
+            'role' => array(
+                'type' => 'integer',
+                'length' => 2,
+                'notnull' => true
+            ),
+	);
+
+
+
+	$ilDB->createTable("auth_authhk_azuread", $fields_conf);
+	$ilDB->addPrimaryKey("auth_authhk_azuread", array("id"));
+}
 ?>

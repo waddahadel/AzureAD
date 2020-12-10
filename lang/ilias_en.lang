@@ -1,14 +1,25 @@
-config_configuration#:#Configuration
-config_configuration_saved#:#Configuration saved
-config_save#:#Save
-config_active#:#Active
-config_provider#:#Provider
-config_secret#:#API Key
-config_login_element_type#:#Login Element Type
-config_login_prompt_type#:#Login Prompt?
-config_logout_scope#:# Logout globally
-config_custom_session#:#Custom Session 
-config_session_duration#:# Session duration(in Seconds)
-config_allow_sync#:# Allow sync
-config_role#:# Default role
-config_uid#:# UID
+#:#Globus AzureAD
+azure#:#Globus AzureAD
+configuration#:#Configuration
+configuration_saved#:#Configuration saved
+save#:#Save
+active#:#Active
+provider#:#Server-URL
+provider_info#:# Info
+secret#:#API Key
+secret_info#:# Info
+login_element_type#:#Login Element Type
+login_prompt_type#:#Login Prompt?
+logout_scope#:# Behaviour on logout(Experimental)
+logout_scope_info#:#
+is_custom_session#:# Settings for Session Duration(Experimental)
+is_custom_session_option#:#Custom Session Duration
+session_duration#:# Session duration
+sync_allowed#:# Automatic Synchronisation
+role#:# Role assignments
+links_select_one#:# Please choose a global role für newly created ILIAS users
+link_select_one_info#:# Please choose a global role für newly created ILIAS users
+minutes#:# Minutes
+logout_scope_global#:#Logout globally
+logout_scope_ilias#:# Logout only from ILIAS
+saving_invoked#:# The changes were saved successfully

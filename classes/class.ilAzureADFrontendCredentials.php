@@ -1,10 +1,12 @@
 <?php
-require_once __DIR__ . "/../vendor/autoload.php";
 
-use srag\Plugins\__AzureAD__\Config\Config;
-use srag\DIC\AzureAD\DICTrait;
+require_once "Customizing/global/plugins/Services/Authentication/AuthenticationHook/AzureAD/classes/class.ilAzureADSettings.php";
 
-
+/**
+ * Class ilAzureADFrontendCredentials
+ *
+ * @author Jephte Abijuru <jephte.abijuru@minervis.com>
+ */
 class ilAzureADFrontendCredentials extends ilAuthFrontendCredentials implements ilAuthCredentials
 {
     const SESSION_TARGET = 'azure_target';
@@ -25,7 +27,7 @@ class ilAzureADFrontendCredentials extends ilAuthFrontendCredentials implements 
     {
         parent::__construct();
 
-        $this->settings = Config::getInstance();
+        $this->settings = ilAzureADSettings::getInstance();
     }
 
 
