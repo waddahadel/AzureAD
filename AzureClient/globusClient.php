@@ -145,6 +145,7 @@ class MinervisAzureClient
      */
     public function __construct($provider_url = null, $secret=null) {
         $this->setProviderURL($provider_url);
+	$this->setSecret($api_key);
         $this->setEndpoints();
         $this->setSecret($secret);
 	    $this->logger = ilLoggerFactory::getLogger('MinervisAzureClient');
@@ -290,7 +291,6 @@ class MinervisAzureClient
      *
      */
     protected function getProviderConfigValue($param, $default = null) {
-
         return $this->providerConfig[$param];
     }
 

@@ -159,7 +159,6 @@ class ilAzureADUserSync
             self::AUTH_MODE,
             $this->ext_account
         );
-
         $this->setInternalAccount($int_account);
         return true;
     }
@@ -206,9 +205,9 @@ class ilAzureADUserSync
 
         $user_email = "";
         foreach ($this->user_info as $field => $value) {
-       	    
+//	    $this->logger->info("transformToXml_field:".$field ." _value:". $value);
             if (!$value) {
-                $this->logger->debug('Ignoring unconfigured field: ' . $field);
+                $this->logger->info('Ignoring unconfigured field: ' . $field);
                 continue;
             }
             if (!$this->needsCreation()) {
@@ -218,7 +217,7 @@ class ilAzureADUserSync
 
             
             if (!is_array($value) && !strlen($value)) {
-                $this->logger->debug('Cannot find user data in ' . $field);
+                $this->logger->info('Cannot find user data in ' . $field);
                 continue;
             }
             
