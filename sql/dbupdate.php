@@ -1,46 +1,46 @@
 <#1>
 <?php
-if(!$ilDB->tableExists('auth_authhk_azuread')){
-	$fields_conf = array(
-			'id' => array(
-					'type' => 'integer',
-					'length' => 4,
-					'notnull' => true
+if (!$ilDB->tableExists('auth_authhk_azuread')) {
+    $fields_conf = array(
+            'id' => array(
+                    'type' => 'integer',
+                    'length' => 4,
+                    'notnull' => true
             ),
-			'active' => array(
+            'active' => array(
                 'type' => 'integer',
                 'length' => 1,
                 'notnull' => true
              ),
-			'secret' => array(
-					'type' => 'text',
-					'length' => 256,
-					'notnull' => true
+            'secret' => array(
+                    'type' => 'text',
+                    'length' => 256,
+                    'notnull' => true
             ),
-			'provider' => array(
+            'provider' => array(
                 'type' => 'text',
                 'length' => 256,
                 'notnull' => true
             ),
-			'session_duration' => array(
-					'type' => 'integer',
-					'length' => 8,
-					'notnull' => true,
-					'default' =>5
-			),
-			'logout_scope' => array(
-					'type' => 'integer',
-					'length' => 1,
-					'notnull' => true,
-					'default' =>0
+            'session_duration' => array(
+                    'type' => 'integer',
+                    'length' => 8,
+                    'notnull' => true,
+                    'default' =>5
             ),
-			'sync_allowed' => array(
+            'logout_scope' => array(
+                    'type' => 'integer',
+                    'length' => 1,
+                    'notnull' => true,
+                    'default' =>0
+            ),
+            'sync_allowed' => array(
                 'type' => 'integer',
                 'length' => 1,
-				'notnull' => true,
-				'default' => 1
+                'notnull' => true,
+                'default' => 1
             ),
-			'is_custom_session' => array(
+            'is_custom_session' => array(
                 'type' => 'integer',
                 'length' => 1,
                 'notnull' => true
@@ -50,11 +50,11 @@ if(!$ilDB->tableExists('auth_authhk_azuread')){
                 'length' => 2,
                 'notnull' => true
             ),
-	);
+    );
 
 
 
-	$ilDB->createTable("auth_authhk_azuread", $fields_conf);
-	$ilDB->addPrimaryKey("auth_authhk_azuread", array("id"));
+    $ilDB->createTable("auth_authhk_azuread", $fields_conf);
+    $ilDB->addPrimaryKey("auth_authhk_azuread", array("id"));
 }
 ?>

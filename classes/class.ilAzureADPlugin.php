@@ -1,5 +1,5 @@
 <?php
-define("AUTH_AZURE",30);
+define("AUTH_AZURE", 30);
 require_once 'Services/Authentication/classes/class.ilAuthPlugin.php';
 require_once "Customizing/global/plugins/Services/Authentication/AuthenticationHook/AzureAD/classes/class.ilAzureADProvider.php";
 //require_once("Customizing/global/plugins/Services/Authentication/AuthenticationHook/AzureAD/classes/class.ilAzureADAppEventL.php");
@@ -14,7 +14,6 @@ require_once "Customizing/global/plugins/Services/Authentication/AuthenticationH
  */
 class ilAzureADPlugin extends ilAuthPlugin
 {
-
     const PLUGIN_ID = "azuread";
     const PLUGIN_NAME = "AzureAD";
     const PLUGIN_CLASS_NAME = self::class;
@@ -47,10 +46,10 @@ class ilAzureADPlugin extends ilAuthPlugin
      */
     public function __construct()
     {
-	global $DIC;
+        global $DIC;
         parent::__construct();
-	$this->logger = ilLoggerFactory::getLogger('ilAzureADPlugin');
-   }
+        $this->logger = ilLoggerFactory::getLogger('ilAzureADPlugin');
+    }
 
 
     /**
@@ -74,7 +73,7 @@ class ilAzureADPlugin extends ilAuthPlugin
     )/*: void*/
     {
         require_once "Customizing/global/plugins/Services/Authentication/AuthenticationHook/AzureAD/classes/class.ilAzureADAppEventListener.php";
-        ilAzureADAppEventListener::handleEvent($a_component, $a_event,$a_parameter);
+        ilAzureADAppEventListener::handleEvent($a_component, $a_event, $a_parameter);
     }
 
 
@@ -87,12 +86,12 @@ class ilAzureADPlugin extends ilAuthPlugin
     }
 
     /**
-	 * Special alot Init, currently nothing to do here
-	 */
-	public final function slotInit()
-	{
-		//
-	}
+     * Special alot Init, currently nothing to do here
+     */
+    //	public final function slotInit()
+    //	{
+    //
+    //	}
         
     /**
      * uninstallCustom
@@ -102,46 +101,48 @@ class ilAzureADPlugin extends ilAuthPlugin
     protected function uninstallCustom()
     {
         global $ilDB;
-        if($ilDB->tableExists('auth_authhk_azuread')){
+        if ($ilDB->tableExists('auth_authhk_azuread')) {
             $ilDB->dropTable('auth_authhk_azuread');
         }
     }
 
-	/**
-	 * Does your AuthProvider needs "ext_account"? return true, false otherwise.
-	 *
-	 * @param string $a_auth_id
-	 *
-	 * @return bool
-	 */
-	public function isExternalAccountNameRequired($a_auth_id){
+    /**
+     * Does your AuthProvider needs "ext_account"? return true, false otherwise.
+     *
+     * @param string $a_auth_id
+     *
+     * @return bool
+     */
+    public function isExternalAccountNameRequired($a_auth_id)
+    {
         return true;
-
     }
 
 
-	/**
-	 * @param ilAuthCredentials $credentials
-	 * @param string            $a_auth_mode
-	 *
-	 * @return ilAuthProviderInterface Your special instance of
-	 *                                 ilAuthProviderInterface where all the magic
-	 *                                 happens. You get the ilAuthCredentials and
-	 *                                 the user-selected (Sub-)-Mode as well.
-	 */
-	public function getProvider(ilAuthCredentials $credentials, $a_auth_mode){
+    /**
+     * @param ilAuthCredentials $credentials
+     * @param string            $a_auth_mode
+     *
+     * @return ilAuthProviderInterface Your special instance of
+     *                                 ilAuthProviderInterface where all the magic
+     *                                 happens. You get the ilAuthCredentials and
+     *                                 the user-selected (Sub-)-Mode as well.
+     */
+    public function getProvider(ilAuthCredentials $credentials, $a_auth_mode)
+    {
         $provider=new ilAzureADProvider($credentials);
         return $provider;
     }
 
 
-	/**
-	 * @param string $a_auth_id
-	 *
-	 * @return string Text-Representation of your Auth-mode.
-	 */
-	public function getAuthName($a_auth_id){
-        switch($a_auth_id){
+    /**
+     * @param string $a_auth_id
+     *
+     * @return string Text-Representation of your Auth-mode.
+     */
+    public function getAuthName($a_auth_id)
+    {
+        switch ($a_auth_id) {
             case AUTH_AZURE:
                 return "azure";
                 break;
@@ -152,32 +153,35 @@ class ilAzureADPlugin extends ilAuthPlugin
     }
 
 
-	/**
-	 * @param $a_auth_id
-	 *
-	 * @return array return an array with all your sub-modes (options) if you have some.
-	 *               The array comes as ['subid1' => 'Name of the Sub-Mode One', ...]
-	 *               you can return an empty array if you have just a "Main"-Mode.
-	 */
-	 public function getMultipleAuthModeOptions($a_auth_id){
-         return array();
-     }
+    /**
+     * @param $a_auth_id
+     *
+     * @return array return an array with all your sub-modes (options) if you have some.
+     *               The array comes as ['subid1' => 'Name of the Sub-Mode One', ...]
+     *               you can return an empty array if you have just a "Main"-Mode.
+     */
+    public function getMultipleAuthModeOptions($a_auth_id)
+    {
+        return array();
+    }
 
 
-	/**
-	 * @param string $id (can be your Mode or – if you have any – a Sub-mode.
-	 *
-	 * @return bool
-	 */
-    public function isAuthActive($id){
+    /**
+     * @param string $id (can be your Mode or – if you have any – a Sub-mode.
+     *
+     * @return bool
+     */
+    public function isAuthActive($id)
+    {
         return true;
     }
 
 
-	/**
-	 * @return array IDs of your Auth-Modes and Sub-Modes.
-	 */
-    public function getAuthIds(){
+    /**
+     * @return array IDs of your Auth-Modes and Sub-Modes.
+     */
+    public function getAuthIds()
+    {
         return [
             "AUTH_AZURE"=>30
         ];
@@ -193,14 +197,15 @@ class ilAzureADPlugin extends ilAuthPlugin
      * @see ilAuthUtils::_getAuthMode()
      * @return int
      */
-    public function getAuthIdByName($a_auth_name){
+    public function getAuthIdByName($a_auth_name)
+    {
         global $DIC;
 
         $ilDB = $DIC['ilDB'];
         $ilSetting = $DIC['ilSetting'];
 
         
-        switch($a_auth_name){
+        switch ($a_auth_name) {
             case "azure":
                 return AUTH_AZURE;
                 break;
@@ -219,7 +224,8 @@ class ilAzureADPlugin extends ilAuthPlugin
      * Check whther authentication supports sequenced authentication
      * @see ilAuthContainerMultiple
      */
-    public function supportsMultiCheck($a_auth_id){
+    public function supportsMultiCheck($a_auth_id)
+    {
         return false;
     }
     
@@ -228,7 +234,8 @@ class ilAzureADPlugin extends ilAuthPlugin
     /**
      * Check if authentication method allows password modifications
      */
-    public function isPasswordModificationAllowed($a_auth_id){
+    public function isPasswordModificationAllowed($a_auth_id)
+    {
         return true;
     }
     
@@ -241,31 +248,38 @@ class ilAzureADPlugin extends ilAuthPlugin
      *
      * @return int
      */
-    public function getLocalPasswordValidationType($a_auth_id){
+    public function getLocalPasswordValidationType($a_auth_id)
+    {
         return null;
     }
 
-       /**
+    /**
      * Set username
      */
-    public function setUsername($a_name){}
+    public function setUsername($a_name)
+    {
+    }
     
     /**
      * Get username
      */
-    public function getUsername(){
+    public function getUsername()
+    {
         return null;
     }
     
     /**
      * Set password
      */
-    public function setPassword($a_password){}
+    public function setPassword($a_password)
+    {
+    }
     
     /**
      * Get password
      */
-    public function getPassword(){
+    public function getPassword()
+    {
         return null;
     }
     
@@ -273,14 +287,15 @@ class ilAzureADPlugin extends ilAuthPlugin
      * Set captcha code
      * @param type $a_code
      */
-    public function setCaptchaCode($a_code){
-        
+    public function setCaptchaCode($a_code)
+    {
     }
     
     /**
      * Get captcha code
      */
-    public function getCaptchaCode(){
+    public function getCaptchaCode()
+    {
         return null;
     }
     
@@ -289,20 +304,20 @@ class ilAzureADPlugin extends ilAuthPlugin
      * Used - for instance - for manual selection on login screen.
      * @param string $a_auth_mode
      */
-    public function setAuthMode($a_auth_mode){
-
+    public function setAuthMode($a_auth_mode)
+    {
     }
     
     /**
      * Get auth mode
      */
-    public function getAuthMode(){
+    public function getAuthMode()
+    {
         return "azure";
     }
 
-    public function shouldUseOneUpdateStepOnly(){
+    public function shouldUseOneUpdateStepOnly()
+    {
         return false;
     }
-    
-
 }

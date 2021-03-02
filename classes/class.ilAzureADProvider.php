@@ -12,11 +12,10 @@ require_once "Customizing/global/plugins/Services/Authentication/AuthenticationH
  *
  * @author Jephte Abijuru <jephte.abijuru@minervis.com>
  *
- * 
+ *
  */
 class ilAzureADProvider extends ilAuthProvider implements ilAuthProviderInterface
 {
-   
     private $settings = null;
     private $front_end_credentials;
     /**
@@ -38,7 +37,7 @@ class ilAzureADProvider extends ilAuthProvider implements ilAuthProviderInterfac
         parent::__construct($credentials);
         $this->settings = ilAzureADSettings::getInstance();
         //$this->az_settings = ilAzureADSettings::getInstance();
-            $this->front_end_credentials= new ilAzureADFrontendCredentials();
+        $this->front_end_credentials= new ilAzureADFrontendCredentials();
         $this->logger = ilLoggerFactory::getLogger('ilAzureADProvider');
     }
 
@@ -69,8 +68,7 @@ class ilAzureADProvider extends ilAuthProvider implements ilAuthProviderInterfac
      * @return bool
      */
     public function doAuthentication(\ilAuthStatus $status)
-	{
-        
+    {
         try {
             $azure = $this->initClient($this->settings->getProvider(), $this->settings->getSecret());
             $azure->setRedirectURL(ILIAS_HTTP_PATH . 'Customizing/global/plugins/Services/Authentication/AuthenticationHook/AzureAD/azurepage.php');
@@ -89,7 +87,6 @@ class ilAzureADProvider extends ilAuthProvider implements ilAuthProviderInterfac
 
             return true;
         } catch (Exception $e) {
-            
             $this->getLogger()->warning($e->getMessage());
             $this->getLogger()->warning($e->getCode());
             $status->setStatus(ilAuthStatus::STATUS_AUTHENTICATION_FAILED);
@@ -124,25 +121,22 @@ class ilAzureADProvider extends ilAuthProvider implements ilAuthProviderInterfac
             $ext_account
         );
         $shouldMigrate = false;
-        if (strlen($int_account) == 0 && $user_info->mailNickname){
+        if (strlen($int_account) == 0 && $user_info->mailNickname) {
             $shortLogin = $user_info->mailNickname;
             $int_account = ilObjUser::_checkExternalAuthAccount(
                 ilAzureADUserSync::AUTH_MODE,
                 $shortLogin
             );
-        
         }
-        if  (strlen($int_account) !== 0){
+        if (strlen($int_account) !== 0) {
             $shouldMigrate = true;
-        $this->getLogger()->debug('Should Migrate:'.$shouldMigrate  );
-
-        } 
+            $this->getLogger()->debug('Should Migrate:'.$shouldMigrate);
+        }
         $this->getLogger()->debug('Internal account: ' . $int_account);
 
         try {
             $sync = new ilAzureADUserSync($this->settings, $user_info);
             if (!is_string($ext_account)) {
-                
                 $status->setStatus(ilAuthStatus::STATUS_AUTHENTICATION_FAILED);
                 $status->setReason('err_wrong_login');
                 return $status;
@@ -153,10 +147,10 @@ class ilAzureADProvider extends ilAuthProvider implements ilAuthProviderInterfac
             $sync->updateUser();
 
             $user_id = $sync->getUserId();
-            if($sync->getMigrationState()){
+            if ($sync->getMigrationState()) {
                 $sync->updateLogin($ext_account);
             }
-	    
+        
             ilSession::set('used_external_auth', true);
             $status->setAuthenticatedUserId($user_id);
             $status->setStatus(ilAuthStatus::STATUS_AUTHENTICATED);
@@ -177,7 +171,7 @@ class ilAzureADProvider extends ilAuthProvider implements ilAuthProviderInterfac
      */
     private function initClient(string $base_url, string $apiKey) : MinervisAzureClient
     {
-       $azure=new MinervisAzureClient($base_url, $apiKey);
-       return $azure;
+        $azure=new MinervisAzureClient($base_url, $apiKey);
+        return $azure;
     }
 }

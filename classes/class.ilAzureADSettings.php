@@ -7,7 +7,8 @@
  *
  *
  */
-class ilAzureADSettings{
+class ilAzureADSettings
+{
     const STORAGE_ID = 'azuread';
     const LOGIN_ELEMENT_TYPE_TXT = 0;
     const LOGIN_ELEMENT_TYPE_IMG = 1;
@@ -67,7 +68,7 @@ class ilAzureADSettings{
      */
     private $allow_sync=1;
 
-    /** 
+    /**
      *@var int
     */
     private $connection_id=0;
@@ -104,7 +105,7 @@ class ilAzureADSettings{
      */
     public static function getInstance() : \ilAzureADSettings
     {
-        if (self::$instance ) {
+        if (self::$instance) {
             return self::$instance;
         }
         return self::$instance=new ilAzureADSettings();
@@ -137,15 +138,11 @@ class ilAzureADSettings{
             'role' =>['integer', $this->getRole()],
             'sync_allowed' =>['integer',$this->ilBoolToInt($this->isSyncAllowed())]
         );
-        if($num !== 0){
-            $ilDB->update('auth_authhk_azuread', $a_data,array('id' => array('integer', $this->connection_id)));
-        }else{
+        if ($num !== 0) {
+            $ilDB->update('auth_authhk_azuread', $a_data, array('id' => array('integer', $this->connection_id)));
+        } else {
             $ilDB->insert('auth_authhk_azuread', $a_data);
         }
-
-       
-
-
     }
 
     
@@ -159,7 +156,7 @@ class ilAzureADSettings{
         global $ilDB;
         //$values=array()
         $result=$ilDB->query("SELECT * FROM auth_authhk_azuread");
-        while($record=$ilDB->fetchAssoc($result)) {
+        while ($record=$ilDB->fetchAssoc($result)) {
             $active=$this->ilIntToBool($record['active']);
             $this->setActive($active);
             $this->setProvider($record['provider']);
@@ -352,23 +349,27 @@ class ilAzureADSettings{
      * @param  mixed $a_val
      * @return void
      */
-    private function ilBoolToInt($a_val) 
+    private function ilBoolToInt($a_val)
     {
-		if ($a_val == true) return 1;
-		return 0;
+        if ($a_val == true) {
+            return 1;
+        }
+        return 0;
     }
-    	
-	/**
-	 * ilIntToBool
-	 *
-	 * @param  mixed $a_val
-	 * @return void
-	 */
-    private function ilIntToBool($a_val) 
+        
+    /**
+     * ilIntToBool
+     *
+     * @param  mixed $a_val
+     * @return void
+     */
+    private function ilIntToBool($a_val)
     {
-		if ($a_val == 1) return true;
-		return false;
-	}
+        if ($a_val == 1) {
+            return true;
+        }
+        return false;
+    }
 
 
 
@@ -382,7 +383,4 @@ class ilAzureADSettings{
     {
         $this->read(); //for code compatibility: remove later
     }
-
-
 }
-?>

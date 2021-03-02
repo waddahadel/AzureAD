@@ -5,7 +5,7 @@ require_once "Customizing/global/plugins/Services/Authentication/AuthenticationH
  *
  * @author Jephte Abijuru <jephte.abijuru@minervis.com>
  *
- * 
+ *
  */
 class ilAzureADUserSync
 {
@@ -51,7 +51,7 @@ class ilAzureADUserSync
 
 
 
-    public function __construct( $settings, $user_info)
+    public function __construct($settings, $user_info)
     {
         global $DIC;
         $this->settings = ilAzureADSettings::getInstance();
@@ -91,7 +91,8 @@ class ilAzureADUserSync
         return $this->usr_id;
     }
 
-    public function updateLogin($new_login){
+    public function updateLogin($new_login)
+    {
         $user=new ilObjUser($this->usr_id);
         $user->updateLogin($new_login);
     }
@@ -111,11 +112,10 @@ class ilAzureADUserSync
      * @param  mixed $migrate
      * @return void
      */
-    public function setMigrationState(bool $migrate=false) 
+    public function setMigrationState(bool $migrate=false)
     {
         $this->migrate=$migrate;
-
-    }    
+    }
     
     /**
      * getMigrationState
@@ -125,7 +125,6 @@ class ilAzureADUserSync
     public function getMigrationState() : bool
     {
         return $this->migrate;
-
     }
 
     /**
@@ -144,7 +143,7 @@ class ilAzureADUserSync
         $importParser = new ilUserImportParser();
         $importParser->setXMLContent($this->writer->xmlDumpMem(false));
 
-        if ($this->needsCreation()){
+        if ($this->needsCreation()) {
             $roles = [$this->settings->getRole() => $this->settings->getRole() ];
             $importParser->setRoleAssignment($roles);
         }
@@ -170,9 +169,8 @@ class ilAzureADUserSync
      */
     protected function transformToXml()
     {
-        
         $login= $this->ext_account;
-        if ($this->getMigrationState()){
+        if ($this->getMigrationState()) {
             $login=$this->user_info->unique_name;
         }
         $this->writer->xmlStartTag('Users');
@@ -205,7 +203,7 @@ class ilAzureADUserSync
 
         $user_email = "";
         foreach ($this->user_info as $field => $value) {
-//	    $this->logger->info("transformToXml_field:".$field ." _value:". $value);
+            //	    $this->logger->info("transformToXml_field:".$field ." _value:". $value);
             if (!$value) {
                 $this->logger->info('Ignoring unconfigured field: ' . $field);
                 continue;
@@ -236,15 +234,15 @@ class ilAzureADUserSync
                     break;
                 case 'department':
                     $this->writer->xmlElement('Department', [], $value);
-                    break;                    
+                    break;
 
                 case 'companyName':
                     $this->writer->xmlElement('Institution', [], $value);
                     break;
 
-                case 'employeeId':                    
+                case 'employeeId':
                     $this->writer->xmlElement(
-                        'UserDefinedField', 
+                        'UserDefinedField',
                         [
                             'Name' => "PERNR"
                         ],
@@ -252,7 +250,7 @@ class ilAzureADUserSync
                     );
                     break;
                 case 'unique_name':
-                    if (strlen($user_email) === 0&& strpos($this->user_info->unique_name, '@') !==0){
+                    if (strlen($user_email) === 0&& strpos($this->user_info->unique_name, '@') !==0) {
                         $user_email = $value;
                     }
                     
@@ -267,7 +265,7 @@ class ilAzureADUserSync
         $this->writer->xmlElement('Email', [], $user_email);
 
         
-        if ($this->needsCreation()){
+        if ($this->needsCreation()) {
             $long_role_id = ('il_' . IL_INST_ID . '_role_' . $this->settings->getRole());
             $this->writer->xmlElement(
                 'Role',
@@ -284,5 +282,4 @@ class ilAzureADUserSync
 
         $this->logger->debug("xmlDumpMem: ".$this->writer->xmlDumpMem());
     }
-
 }

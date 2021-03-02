@@ -14,7 +14,8 @@
  * @param string $base64url
  * @return bool|string
  */
-function base64url_decode($base64url) {
+function base64url_decode($base64url)
+{
     return base64_decode(b64url2b64($base64url));
 }
 
@@ -26,7 +27,8 @@ function base64url_decode($base64url) {
  * @param string $base64url
  * @return string
  */
-function b64url2b64($base64url) {
+function b64url2b64($base64url)
+{
     // "Shouldn't" be necessary, but why not
     $padding = strlen($base64url) % 4;
     if ($padding > 0) {
@@ -41,7 +43,6 @@ function b64url2b64($base64url) {
  */
 class MinervisAzureClientException extends \Exception
 {
-
 }
 
 /**
@@ -61,8 +62,6 @@ if (!function_exists('json_decode')) {
  */
 class MinervisAzureClient
 {
-
-    
     private $providerConfig = array();
 
     /**
@@ -143,20 +142,21 @@ class MinervisAzureClient
      * @param $client_secret string optional
      * @param null $issuer
      */
-    public function __construct($provider_url = null, $secret=null) {
+    public function __construct($provider_url = null, $secret=null)
+    {
         $this->setProviderURL($provider_url);
-	$this->setSecret($api_key);
+        $this->setSecret($api_key);
         $this->setEndpoints();
         $this->setSecret($secret);
-	    $this->logger = ilLoggerFactory::getLogger('MinervisAzureClient');
-
+        $this->logger = ilLoggerFactory::getLogger('MinervisAzureClient');
     }
     
 
     /**
      * @param $provider_url
      */
-    public function setProviderURL($provider_url) {
+    public function setProviderURL($provider_url)
+    {
         $this->providerConfig['providerUrl'] = $provider_url;
     }
     
@@ -166,23 +166,24 @@ class MinervisAzureClient
      * @param  string  $secret
      * @return void
      */
-    public function setSecret($secret){
+    public function setSecret($secret)
+    {
         $this->providerConfig['secret'] = $secret;
     }
 
     
-    private function setEndpoints(){
- 
+    private function setEndpoints()
+    {
         $providerUrl=$this->providerConfig['providerUrl'];
-        $this->providerConfig['refresh_endpoint']=$providerUrl."/ilias/app/azure/v1/refresh";
-        $this->providerConfig['token_endpoint']=$providerUrl."/ilias/app/azure/v1/login";
-        $this->providerConfig['verify_endpoint']=$providerUrl."/ilias/app/azure/v1/verify";
+        $this->providerConfig['refresh_endpoint']=$providerUrl."/v1/ilias/app/azure/refresh";
+        $this->providerConfig['token_endpoint']=$providerUrl."/v1/ilias/app/azure/login";
+        $this->providerConfig['verify_endpoint']=$providerUrl."/v1/ilias/app/azure/verify";
     }
 
-    public function configureInternalProxy(){
+    public function configureInternalProxy()
+    {
         $this->getProviderConfigValue['http_proxy']="www-proxy.vpn.minervis.com:3128/";
         $this->getProviderConfigValue['https_proxy'] = "www-proxy.vpn.minervis.com:3128/";
-
     }
 
 
@@ -190,7 +191,8 @@ class MinervisAzureClient
      * @return bool
      * @throws MinervisAzureClientException
      */
-    public function authenticate() {
+    public function authenticate()
+    {
         $this->requestTokens();
        
 
@@ -203,7 +205,7 @@ class MinervisAzureClient
         // var_dump($_REQUEST);
         // If we have an authorization code then proceed to request a token
         if (isset($_REQUEST['code'])) {
-           // echo "found request code";
+            // echo "found request code";
             $code = $_REQUEST['code'];
             //$token_json = $this->requestTokens($code);
 
@@ -229,13 +231,11 @@ class MinervisAzureClient
 
             // Save the access token
             $this->accessToken = $token_json->jwt;
-
         }
 
         $this->requestAuthorization();
        
         return false;
-
     }
 
     /**
@@ -250,7 +250,8 @@ class MinervisAzureClient
      *
      * @throws MinervisAzureClientException
      */
-    public function signOut($accessToken, $redirect) {
+    public function signOut($accessToken, $redirect)
+    {
         /*$signout_endpoint = $this->getProviderConfigValue('end_session_endpoint');
 
         $signout_params = null;
@@ -274,7 +275,8 @@ class MinervisAzureClient
     /**
      * @param array $param - example: prompt=login
      */
-    public function addAuthParam($param) {
+    public function addAuthParam($param)
+    {
         $this->authParams = array_merge($this->authParams, (array)$param);
     }
 
@@ -290,18 +292,18 @@ class MinervisAzureClient
      * @return string
      *
      */
-    protected function getProviderConfigValue($param, $default = null) {
+    protected function getProviderConfigValue($param, $default = null)
+    {
         return $this->providerConfig[$param];
     }
-
-   
 
 
     /**
      * @param string $url Sets redirect URL for auth flow
      */
-    public function setRedirectURL ($url) {
-        if (parse_url($url,PHP_URL_HOST) !== false) {
+    public function setRedirectURL($url)
+    {
+        if (parse_url($url, PHP_URL_HOST) !== false) {
             $this->redirectURL = $url;
         }
     }
@@ -311,7 +313,8 @@ class MinervisAzureClient
      *
      * @return string
      */
-    public function getRedirectURL() {
+    public function getRedirectURL()
+    {
 
         // If the redirect URL has been set then return it.
         if (property_exists($this, 'redirectURL') && $this->redirectURL) {
@@ -357,8 +360,9 @@ class MinervisAzureClient
      *
      * @return string
      */
-    protected function generateRandString() {
-        return md5(uniqid(rand(), TRUE));
+    protected function generateRandString()
+    {
+        return md5(uniqid(rand(), true));
     }
 
     /**
@@ -366,17 +370,14 @@ class MinervisAzureClient
      * @return void
      * @throws MinervisAzureClientException
      */
-    private function requestAuthorization() {
-
+    private function requestAuthorization()
+    {
         $auth_endpoint = $this->getProviderConfigValue('token_endpoint');
         
         $response_type = 'code';
         //$this->commitSession();
         //$this->redirect($auth_endpoint);
     }
-
-
-
 
     /**
      * Requests ID and Access tokens
@@ -385,12 +386,10 @@ class MinervisAzureClient
      * @return mixed
      * @throws MinervisAzureClientException
      */
-    public function requestTokens() {
+    public function requestTokens()
+    {
         $token_endpoint = $this->getProviderConfigValue('token_endpoint');
-        //$token_endpoint_auth_methods_supported = $this->getProviderConfigValue('token_endpoint_auth_methods_supported', ['client_secret_basic']);
-        $headers = [
-                      
-        ];
+        $headers = [];
         $token_params=[
             'user'=>$_REQUEST['username'],
             'password'=>$_REQUEST['password']
@@ -398,9 +397,9 @@ class MinervisAzureClient
         $this->tokenResponse = json_decode($this->fetchURL($token_endpoint, $token_params, null));
         //var_dump($this->tokenResponse);
         
-        $decodedJWT=json_decode(json_encode($this->decodeJWT($this->tokenResponse->jwt,1)),true);
+        $decodedJWT=json_decode(json_encode($this->decodeJWT($this->tokenResponse->jwt, 1)), true);
         $content=json_decode(json_encode($this->tokenResponse->content), true);
-        $this->userInfo = (object) array_merge($decodedJWT,$content);
+        $this->userInfo = (object) array_merge($decodedJWT, $content);
         return $this->tokenResponse;
     }
 
@@ -411,21 +410,22 @@ class MinervisAzureClient
      * @return mixed
      * @throws MinervisAzureClientException
      */
-    public function refreshToken($refreshToken=null) {
+    public function refreshToken($refreshToken=null)
+    {
         $token_endpoint = $this->getProviderConfigValue('refresh_endpoint');
 
         $grant_type = 'refreshToken';
 
 
         $token_params = array(
-            'refresh'=>$this->refreshToken            
+            'refresh'=>$this->refreshToken
         );
         $headers=[
             'Authorization: Bearer '.$this->accessToken
         ];
 
         // Convert token params to string format
-//$token_params = http_build_query($token_params, null, '&', $this->enc_type);
+        //$token_params = http_build_query($token_params, null, '&', $this->enc_type);
 
         $json = json_decode($this->fetchURL($token_endpoint, $token_params, $headers));
 
@@ -448,12 +448,13 @@ class MinervisAzureClient
      * @return mixed
      * @throws MinervisAzureClientException
      */
-    public function verifyToken() {
+    public function verifyToken()
+    {
         $token_endpoint = $this->getProviderConfigValue('verify_endpoint');
 
         
         $token_params = array(
-            'token'=>$this->accessToken            
+            'token'=>$this->accessToken
         );
 
 
@@ -461,14 +462,15 @@ class MinervisAzureClient
 
         $json = json_decode($this->fetchURL($token_endpoint, $token_params, null));
 
-        if($this->getResponseCode()<>400){
+        if ($this->getResponseCode()<>400) {
             return false;
-        }       
+        }
 
         return true;
     }
 
-    public function getUserInfo(){
+    public function getUserInfo()
+    {
         return $this->userInfo;
     }
 
@@ -478,7 +480,8 @@ class MinervisAzureClient
      * @throws MinervisAzureClientException
      * @return object
      */
-    private function get_key_for_header($keys, $header) {
+    private function get_key_for_header($keys, $header)
+    {
         return null;
     }
 
@@ -489,7 +492,8 @@ class MinervisAzureClient
      * @param string $str
      * @return string
      */
-    protected function urlEncode($str) {
+    protected function urlEncode($str)
+    {
         $enc = base64_encode($str);
         $enc = rtrim($enc, '=');
         $enc = strtr($enc, '+/', '-_');
@@ -501,8 +505,8 @@ class MinervisAzureClient
      * @param int $section the section we would like to decode
      * @return object
      */
-    protected function decodeJWT($jwt, $section = 0) {
-
+    protected function decodeJWT($jwt, $section = 0)
+    {
         $parts = explode('.', $jwt);
         return json_decode(base64url_decode($parts[$section]));
     }
@@ -518,15 +522,13 @@ class MinervisAzureClient
      * @throws MinervisAzureClientException
      * @return mixed
      */
-    protected function fetchURL($url, $post_body = null, $headers = array()) {
-        
-
-
+    protected function fetchURL($url, $post_body = null, $headers = array())
+    {
         $proxy="www-proxy.vpn.minervis.com:3128";
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $url);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-        if($post_body!==null){
+        if ($post_body!==null) {
             curl_setopt($ch, CURLOPT_POST, 1);
             curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($post_body));
         }
@@ -534,7 +536,7 @@ class MinervisAzureClient
         curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
         
-        if(!isset($headers)){
+        if (!isset($headers)) {
             $headers=array(
                 'Content-Type: application/json',
                 'APIKey:  '. $this->getProviderConfigValue('secret')
@@ -559,9 +561,6 @@ class MinervisAzureClient
 
         // Close the cURL resource, and free system resources
         curl_close($ch);
-        /*$output=json_decode($output);
-        var_dump($output);*/
-
         return $output;
     }
 
@@ -569,7 +568,8 @@ class MinervisAzureClient
     /**
      * @param string $url
      */
-    public function redirect($url) {
+    public function redirect($url)
+    {
         header('Location: ' . $url);
         exit;
     }
@@ -593,7 +593,8 @@ class MinervisAzureClient
      * @return mixed
      * @throws MinervisAzureClientException
      */
-    public function revokeToken($token, $token_type_hint = '', $clientId = null, $clientSecret = null) {
+    public function revokeToken($token, $token_type_hint = '', $clientId = null, $clientSecret = null)
+    {
         $revocation_endpoint = $this->getProviderConfigValue('revocation_endpoint');
 
         $post_data = array(
@@ -624,63 +625,72 @@ class MinervisAzureClient
      * @param string $accessToken
      * @return void
      */
-    public function setAccessToken($accessToken) {
+    public function setAccessToken($accessToken)
+    {
         $this->accessToken = $accessToken;
     }
 
     /**
      * @return string
      */
-    public function getAccessToken() {
+    public function getAccessToken()
+    {
         return $this->accessToken;
     }
 
     /**
      * @return string
      */
-    public function getRefreshToken() {
+    public function getRefreshToken()
+    {
         return $this->refreshToken;
     }
 
     /**
      * @return string
      */
-    public function getIdToken() {
+    public function getIdToken()
+    {
         return $this->idToken;
     }
 
     /**
      * @return object
      */
-    public function getAccessTokenHeader() {
+    public function getAccessTokenHeader()
+    {
         return $this->decodeJWT($this->accessToken);
     }
 
     /**
      * @return object
      */
-    public function getAccessTokenPayload() {
+    public function getAccessTokenPayload()
+    {
         return $this->decodeJWT($this->accessToken, 1);
     }
 
     /**
      * @return object
      */
-    public function getIdTokenHeader() {
+    public function getIdTokenHeader()
+    {
         return $this->decodeJWT($this->idToken);
     }
 
     /**
      * @return object
      */
-    public function getIdTokenPayload() {
+    public function getIdTokenPayload()
+    {
         return $this->decodeJWT($this->idToken, 1);
     }
 
     /**
      * @return string
      */
-    public function getTokenResponse() {
+    public function getTokenResponse()
+    {
         return $this->tokenResponse;
     }
 
@@ -714,13 +724,14 @@ class MinervisAzureClient
         return $this->timeOut;
     }
 
-        /**
+    /**
      * Stores nonce
      *
      * @param string $nonce
      * @return string
      */
-    protected function setNonce($nonce) {
+    protected function setNonce($nonce)
+    {
         $this->setSessionKey('azure_globus_nonce', $nonce);
         return $nonce;
     }
@@ -730,7 +741,8 @@ class MinervisAzureClient
      *
      * @return string
      */
-    protected function getNonce() {
+    protected function getNonce()
+    {
         return $this->getSessionKey('azure_globus_nonce');
     }
 
@@ -739,7 +751,8 @@ class MinervisAzureClient
      *
      * @return void
      */
-    protected function unsetNonce() {
+    protected function unsetNonce()
+    {
         $this->unsetSessionKey('azure_globus_nonce');
     }
 
@@ -749,7 +762,8 @@ class MinervisAzureClient
      * @param string $state
      * @return string
      */
-    protected function setState($state) {
+    protected function setState($state)
+    {
         $this->setSessionKey('azure_globus_state', $state);
         return $state;
     }
@@ -759,7 +773,8 @@ class MinervisAzureClient
      *
      * @return string
      */
-    protected function getState() {
+    protected function getState()
+    {
         return $this->getSessionKey('azure_globus_state');
     }
 
@@ -768,7 +783,8 @@ class MinervisAzureClient
      *
      * @return void
      */
-    protected function unsetState() {
+    protected function unsetState()
+    {
         $this->unsetSessionKey('azure_globus_state');
     }
 
@@ -810,31 +826,36 @@ class MinervisAzureClient
     /**
      * Use session to manage a nonce
      */
-    protected function startSession() {
+    protected function startSession()
+    {
         if (!isset($_SESSION)) {
             @session_start();
         }
     }
 
-    protected function commitSession() {
+    protected function commitSession()
+    {
         $this->startSession();
 
         session_write_close();
     }
 
-    protected function getSessionKey($key) {
+    protected function getSessionKey($key)
+    {
         $this->startSession();
 
         return $_SESSION[$key];
     }
 
-    protected function setSessionKey($key, $value) {
+    protected function setSessionKey($key, $value)
+    {
         $this->startSession();
 
         $_SESSION[$key] = $value;
     }
 
-    protected function unsetSessionKey($key) {
+    protected function unsetSessionKey($key)
+    {
         $this->startSession();
 
         unset($_SESSION[$key]);
@@ -850,6 +871,4 @@ class MinervisAzureClient
     {
         return $this->authParams;
     }
-
-
 }
