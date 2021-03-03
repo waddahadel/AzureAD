@@ -257,8 +257,7 @@ class MinervisAzureClient
         $signout_params = null;
         if($redirect === null){
             $signout_params = array('jwt_hint' => $accessToken);
-        }
-        else {
+        } else {
             $signout_params = array(
                 'jwt_hint' => $accessToken,
                 'post_logout_redirect_uri' => $redirect);
