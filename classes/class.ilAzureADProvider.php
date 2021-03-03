@@ -90,10 +90,10 @@ class ilAzureADProvider extends ilAuthProvider implements ilAuthProviderInterfac
             return true;
         } catch (Exception $e) {
             
-            $this->getLogger()->warning($e->getMessage());
-            $this->getLogger()->warning($e->getCode());
+            $this->getLogger()->warning("error_message".$e->getMessage());
+            $this->getLogger()->warning("error_code".$e->getCode());
             $status->setStatus(ilAuthStatus::STATUS_AUTHENTICATION_FAILED);
-            $status->setTranslatedReason($e->getMessage());
+            $status->setTranslatedReason("Login fehlgeschlagen");
             return false;
         }
     }

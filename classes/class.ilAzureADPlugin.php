@@ -89,10 +89,10 @@ class ilAzureADPlugin extends ilAuthPlugin
     /**
 	 * Special alot Init, currently nothing to do here
 	 */
-	public final function slotInit()
-	{
+//	public final function slotInit()
+//	{
 		//
-	}
+//	}
         
     /**
      * uninstallCustom
