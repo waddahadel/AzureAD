@@ -7,3 +7,5 @@
 - updated the API endpoints: allow versioning  
 - PCR-2 Fixes  
 - clean the code
+- remove the slot id functionality: mo longer necessary in 6.x
+- versioning
