@@ -1,8 +1,7 @@
 <?php
 
-
 $id = "azuread";
-$version = "0.1.1";
+$version = "0.1.2";
 $ilias_min_version = "5.4.0";
 $ilias_max_version = "6.999";
 $responsible = "Minervis GmbH";
