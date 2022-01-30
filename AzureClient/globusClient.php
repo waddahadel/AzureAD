@@ -144,6 +144,8 @@ class MinervisAzureClient
      */
     public function __construct($provider_url = null, $secret=null)
     {
+	global $DIC;
+        $this->clientLogger=$DIC->logger()->root();
         $this->setProviderURL($provider_url);
         $this->setSecret($api_key);
         $this->setEndpoints();
