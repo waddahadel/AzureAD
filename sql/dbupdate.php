@@ -58,3 +58,20 @@ if (!$ilDB->tableExists('auth_authhk_azuread')) {
     $ilDB->addPrimaryKey("auth_authhk_azuread", array("id"));
 }
 ?>
+
+<#2>
+<?php
+
+if ($ilDB->tableColumnExists("auth_authhk_azuread", "secret")){
+    $ilDB->renameTableColumn("auth_authhk_azuread", "secret", "apikey");
+}
+
+if (!$ilDB->tableColumnExists("auth_authhk_azuread", "secretkey")){
+	$ilDB->addTableColumn('auth_authhk_azuread', 'secretkey', array(
+		'type' => 'text',
+		'length' => 256,
+		'notnull' => 0
+	));
+}
+?>
+

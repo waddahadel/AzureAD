@@ -18,6 +18,7 @@ class ilAzureADProvider extends ilAuthProvider implements ilAuthProviderInterfac
 {
     private $settings = null;
     private $front_end_credentials;
+    private $ctrl;
     /**
      * @var \ilLogger
      */
@@ -39,6 +40,7 @@ class ilAzureADProvider extends ilAuthProvider implements ilAuthProviderInterfac
         //$this->az_settings = ilAzureADSettings::getInstance();
         $this->front_end_credentials= new ilAzureADFrontendCredentials();
         $this->logger = ilLoggerFactory::getLogger('ilAzureADProvider');
+        $this->ctrl = $GLOBALS['ilCtrl'];
     }
 
     /**
@@ -69,8 +71,9 @@ class ilAzureADProvider extends ilAuthProvider implements ilAuthProviderInterfac
      */
     public function doAuthentication(\ilAuthStatus $status)
     {
+        global $ilUser;
         try {
-            $azure = $this->initClient($this->settings->getProvider(), $this->settings->getSecret());
+            $azure = $this->initClient($this->settings->getProvider(), $this->settings->getApiKey(), $this->settings->getSecretKey());
             $azure->setRedirectURL(ILIAS_HTTP_PATH . 'Customizing/global/plugins/Services/Authentication/AuthenticationHook/AzureAD/azurepage.php');
             $azure->authenticate();
             // user is authenticated, otherwise redirected to authorization endpoint or exception
@@ -78,12 +81,11 @@ class ilAzureADProvider extends ilAuthProvider implements ilAuthProviderInterfac
             $status = $this->handleUpdate($status, $claims);
 
             // @todo : provide a general solution for all authentication methods
-            $_GET['target'] = (string) $this->front_end_credentials->getRedirectionTarget();
+            //$_GET['target'] = (string) $this->front_end_credentials->getRedirectionTarget();
             if ($this->settings->getLogoutScope() == ilAzureADSettings::LOGOUT_SCOPE_GLOBAL) {
                 $azure->requestTokens();
                 ilSession::set('azure_auth_token', $azure->getAccessToken());
             }
-
 
             return true;
         } catch (Exception $e) {
@@ -157,7 +159,7 @@ class ilAzureADProvider extends ilAuthProvider implements ilAuthProviderInterfac
             $status->setStatus(ilAuthStatus::STATUS_AUTHENTICATED);
 
             // @todo : provide a general solution for all authentication methods
-            $_GET['target'] = (string) $this->front_end_credentials->getRedirectionTarget();
+            //$_GET['target'] = (string) $this->front_end_credentials->getRedirectionTarget();
         } catch (Exception $e) {
             throw $e;
             $status->setStatus(ilAuthStatus::STATUS_AUTHENTICATION_FAILED);
@@ -170,9 +172,9 @@ class ilAzureADProvider extends ilAuthProvider implements ilAuthProviderInterfac
     /**
      * @return MinervisAzureClient
      */
-    private function initClient(string $base_url, string $apiKey) : MinervisAzureClient
+    private function initClient(string $base_url, string $apiKey, string $secretKey = '') : MinervisAzureClient
     {
-        $azure=new MinervisAzureClient($base_url, $apiKey);
+        $azure=new MinervisAzureClient($base_url, $apiKey, $secretKey);
         return $azure;
     }
 }

@@ -3,11 +3,12 @@ azure#:#Globus AzureAD
 configuration#:#Konfiguration
 configuration_saved#:#Konfiguration gespeichert
 save#:#Speichern
-active#:#Aktiv
+active#:#Globale Sync aktivieren
+active_info#:# ILIAS-Benutzer löschen, wenn Benutzer in AzureAD gelöscht werden
 provider#:#Server-URL
 confif_provider_info#:# Info
-secret#:#API Key
-secret_info#:# Info
+apikey#:#API-Schlüsssel
+apikey_info#:# Info
 login_element_type#:#Login Element Type
 login_prompt_type#:#Login Prompt?
 logout_scope#:# Verhalten beim Abmelden (Experimentell)
@@ -16,6 +17,7 @@ is_custom_session#:#Einstellungen zur Sitzungsdauer(Experimentell)
 is_custom_session_option#:#Eigene Sitzungsdauer
 session_duration#:# Sitzungsdauer
 sync_allowed#:# Automatische Synchronisierung
+sync_allowed_info#:#Benutzerdaten beim Anmelden  aktualisieren
 role#:# Rollenzuordnung
 links_select_one#:# Bitte wählen Sie eine globale Rolle für neu anzulegende ILIAS-Benutzer
 link_select_one_info#:#
@@ -23,3 +25,9 @@ minutes#:# Minuten
 logout_scope_global#:#Global abmelden
 logout_scope_ilias#:# Nur bei ILIAS abmelden
 saving_invoked#:# Die Änderungen wurden erfolgreich gespeichert
+secretkey#:#Geheimschlüssel
+run_sync#:#Synchronisieren
+tab_status#:#Zusammenfassung
+tab_general_settings#:# Allgemeine Einstellungen
+cron_title#:#AzureAD Cron
+cron_description#:#Prüft, ob ein Benutzer in ILIAS immer noch in AzureAD vorhanden ist. Falls Nein, wird der Benutzer inaktiv gesetzt.

@@ -40,7 +40,11 @@ class ilAzureADSettings
     /**
      * @var string
      */
-    private $secret = '';
+    private $secretkey = '';
+        /**
+     * @var string
+     */
+    private $apikey = '';
     /**
      * @var int
      */
@@ -129,14 +133,15 @@ class ilAzureADSettings
         $num = $ilDB->numRows($result);
 
         $a_data=array(
-            'active' =>['integer',$this->ilBoolToInt($this->getActive())],
+            'active' =>['integer',intval($this->getActive())],
             'provider' => ['string', $this->getProvider()],
-            'secret'   => ['string', $this->getSecret()],
+            'apikey'   => ['string', $this->getApiKey()],
+            'secretkey'   => ['string', $this->getSecretKey()],
             'logout_scope' => ['integer', (int)$this->getLogoutScope()],
-            'is_custom_session'=>['integer', $this->ilBoolToInt($this->isCustomSession())],
+            'is_custom_session'=>['integer', intval($this->isCustomSession())],
             'session_duration' =>['integer',$this->getSessionDuration()],
             'role' =>['integer', $this->getRole()],
-            'sync_allowed' =>['integer',$this->ilBoolToInt($this->isSyncAllowed())]
+            'sync_allowed' =>['integer',intval($this->isSyncAllowed())]
         );
         if ($num !== 0) {
             $ilDB->update('auth_authhk_azuread', $a_data, array('id' => array('integer', $this->connection_id)));
@@ -157,15 +162,16 @@ class ilAzureADSettings
         //$values=array()
         $result=$ilDB->query("SELECT * FROM auth_authhk_azuread");
         while ($record=$ilDB->fetchAssoc($result)) {
-            $active=$this->ilIntToBool($record['active']);
+            $active= boolval($record['active']);
             $this->setActive($active);
             $this->setProvider($record['provider']);
-            $this->setSecret($record['secret']);
+            $this->setSecretKey($record['secretkey']);
+            $this->setAPIKey($record['apikey']);
             $this->setLogoutScope($record['logout_scope']);
-            $this->useCustomSession($this->ilIntToBool($record['is_custom_session']));
+            $this->useCustomSession( boolval($record['is_custom_session']));
             $this->setSessionDuration($record['session_duration']);
             $this->setRole($record['role']);
-            $sync=$this->ilIntToBool($record['sync_allowed']);
+            $sync= boolval($record['sync_allowed']);
             $this->syncAllowed($sync!=null?$sync:1);
             $this->connection_id = $record['id'];
             $this->values=$record;
@@ -216,6 +222,7 @@ class ilAzureADSettings
         return $this->provider;
     }
     /**
+     * @deprecated
      * @param string $secret
      */
     public function setSecret(string $secret)
@@ -224,12 +231,43 @@ class ilAzureADSettings
     }
 
     /**
+     * @param string $secretkey
+     */
+    public function setSecretKey($secretkey)
+    {
+        $this->secretkey = $secretkey;
+    }
+
+    /**
+     * @deprecated
      * Get secret
      */
     public function getSecret() : string
     {
         return $this->secret;
     }
+    /**
+     * Get secretkey
+     */
+    public function getSecretKey() 
+    {
+        return $this->secretkey;
+    }
+    /**
+     * @param string $api_key
+     */
+    public function setApiKey(string $apikey)
+    {
+        $this->apikey = $apikey;
+    }
+    /**
+     * Get api_key
+     */
+    public function getApiKey() : string
+    {
+        return $this->apikey;
+    }
+
 
     /**
      * Set login element type
@@ -369,6 +407,25 @@ class ilAzureADSettings
             return true;
         }
         return false;
+    }
+
+    public function getAllADUsers($load_active_only = true)
+    {
+        global $DIC;
+
+        $ilDB = $DIC['ilDB'];
+        $query = 'SELECT usr_id, ext_account FROM usr_data ' .
+            'WHERE ext_account LIKE ' . $ilDB->quote('%@globus.net', 'text') .
+            'AND active = '. $ilDB->quote(intval($load_active_only), 'integer');
+        $res = $ilDB->query($query);
+        $data = null;
+        while ($row = $ilDB->fetchAssoc($res)) {
+            $data [] = array(
+                'usr_id' => $row['usr_id'],
+                'ext_account' => $row['ext_account']
+            );
+        }
+        return $data;
     }
 
 

@@ -237,7 +237,13 @@ class ilAzureADUserSync
                     $this->writer->xmlElement('Institution', [], $value);
                     break;
                 case 'jobTitle': 
-                    $this->writer->xmlElement('Title', [], $value);
+                    $this->writer->xmlElement(
+                        'UserDefinedField',
+                        [
+                            'Name' => "JobTitle"
+                        ],
+                        $value
+                    );
                     break;
 
                 case 'employeeId':
