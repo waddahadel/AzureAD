@@ -127,7 +127,7 @@ class MinervisAzureClient
      */
     private $registrationParams = array();
 
-
+    private $login_success = true;
 
 
     /**
@@ -199,6 +199,11 @@ class MinervisAzureClient
     public function setApiKey($api_key)
     {
         $this->providerConfig['api_key'] = $api_key;
+    }
+
+    public function getLoginSuccess()
+    {
+        return $this->login_success;
     }
 
 
@@ -428,6 +433,32 @@ class MinervisAzureClient
         ];
         $this->tokenResponse = json_decode($this->fetchURL($token_endpoint, $token_params, null));
         //var_dump($this->tokenResponse);
+        $message = '';
+        switch($this->responseCode){
+            case self::CODE_INVALID_API_OR_SECRET:
+                if($this->tokenResponse){
+                    $message = 'Status Code '.$this->responseCode . ': Invalid  API or Secret';
+                }else{
+                    $message = 'Status Code '.$this->responseCode . ': Invalid Login credentials';
+                    $this->login_success = false;
+                }
+                break;
+            case self::CODE_METHOD_NOT_ALLOWED:
+                $message = 'Status Code '.$this->responseCode . ': Method not allowed';
+                break;
+            case self::CODE_SERVER_ERROR:
+                $message = 'Status Code '.$this->responseCode . ': Server error';
+                break;
+            case self::CODE_UNSUPPORTED_MEDIA:
+                $message = 'Status Code '.$this->responseCode . ': Unsupported media type';
+                break;
+
+            default:
+        }
+        if($message){
+            $this->logger->info($message);
+            throw new Exception($message);
+        }
         
         $decodedJWT=json_decode(json_encode($this->decodeJWT($this->tokenResponse->jwt, 1)), true);
         $content=json_decode(json_encode($this->tokenResponse->content), true);

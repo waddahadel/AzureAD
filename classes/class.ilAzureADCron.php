@@ -2,9 +2,7 @@
 
 include_once("Customizing/global/plugins/Services/Authentication/AuthenticationHook/AzureAD/AzureClient/globusClient.php");
 require_once "Customizing/global/plugins/Services/Authentication/AuthenticationHook/AzureAD/classes/class.ilAzureADSettings.php";
-
-use ilCronJob;
-use Throwable;
+require_once "Services/Cron/classes/class.ilCronJob.php";
 
 /**
  * Class ilAzureADCron
@@ -105,6 +103,9 @@ class ilAzureADCron extends ilCronJob
 
         try {
             //Fetch users: How do we identify globus users? external account ***@globus.net,
+            if(!$this->settings->getActive()){
+                throw new Exception("Synchronization with AzureAD is not activate. Please contact admin");
+            }
             $users =  $this->settings->getAllADUsers();
             $DIC->logger()->root()->dump($users);
             foreach($users as $user){
@@ -115,7 +116,7 @@ class ilAzureADCron extends ilCronJob
                     $user->update();
                 }
             }
-        } catch (Throwable $e) {
+        } catch (Exception $e) {
             $cron_result->setStatus(ilCronJobResult::STATUS_FAIL);
         }
         $cron_result->setStatus(ilCronJobResult::STATUS_OK);

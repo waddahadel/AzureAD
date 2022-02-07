@@ -164,10 +164,10 @@ class ilAzureADConfigGUI extends ilPluginConfigGUI
         $button->setCommand(self::CMD_SYNCHRONIZE);
         $DIC->toolbar()->addButtonInstance($button);
 
-        $button = ilSubmitButton::getInstance();
-        $button->setCaption($pl->txt('status'), false);
-        $button->setCommand(self::CMD_STATUS);
-        $DIC->toolbar()->addButtonInstance($button);
+        // $button = ilSubmitButton::getInstance();
+        // $button->setCaption($pl->txt('status'), false);
+        // $button->setCommand(self::CMD_STATUS);
+        // $DIC->toolbar()->addButtonInstance($button);
         
         include_once("Services/Form/classes/class.ilPropertyFormGUI.php");
         $this->form=new ilPropertyFormGUI();
@@ -333,9 +333,13 @@ class ilAzureADConfigGUI extends ilPluginConfigGUI
 
     public function synchronize()
     {
+        global $ilCtrl;
+
         include_once("Customizing/global/plugins/Services/Authentication/AuthenticationHook/AzureAD/classes/class.ilAzureADCron.php");
         $job = new ilAzureADCron();
-       $results =  $job->run();
+        $results =  $job->run();
+        $ilCtrl->redirect($this, "configure");
+
     }
     public function status()
     {

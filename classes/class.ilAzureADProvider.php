@@ -72,6 +72,7 @@ class ilAzureADProvider extends ilAuthProvider implements ilAuthProviderInterfac
     public function doAuthentication(\ilAuthStatus $status)
     {
         global $ilUser;
+        $azure = null;
         try {
             $azure = $this->initClient($this->settings->getProvider(), $this->settings->getApiKey(), $this->settings->getSecretKey());
             $azure->setRedirectURL(ILIAS_HTTP_PATH . 'Customizing/global/plugins/Services/Authentication/AuthenticationHook/AzureAD/azurepage.php');
@@ -93,7 +94,11 @@ class ilAzureADProvider extends ilAuthProvider implements ilAuthProviderInterfac
             $this->getLogger()->warning("error_message".$e->getMessage());
             $this->getLogger()->warning("error_code".$e->getCode());
             $status->setStatus(ilAuthStatus::STATUS_AUTHENTICATION_FAILED);
-            $status->setTranslatedReason("Login fehlgeschlagen");
+            if($azure && !$azure->getLoginSuccess()){
+                $status->setReason('err_wrong_login');
+            }else{
+                $status->setTranslatedReason('Login Fehlgeschlagen! Bitte kontaktieren Sie dem Administrator.');
+            }
             return false;
         }
     }
