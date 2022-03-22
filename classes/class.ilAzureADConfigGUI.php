@@ -14,6 +14,10 @@ class ilAzureADConfigGUI extends ilPluginConfigGUI
     const LANG_MODULE = "config";
     const TAB_CONFIGURATION = "configuration";
     const CMD_SAVE = "save";
+    const CMD_SYNCHRONIZE = "synchronize";
+    const CMD_STATUS = "status";
+    const SUBTAB_SETTINGS = "settings";
+    const SUBTAB_STATUS = "status";
     /**
      * @var \ilLogger
      */
@@ -37,6 +41,23 @@ class ilAzureADConfigGUI extends ilPluginConfigGUI
      * @var ilPropertyFormGUI
      */
     private $form;
+
+    /**
+     * @var self|null
+     */
+    protected static $instance = null;
+    /**
+     * @return self
+     */
+    public static function getInstance() : self
+    {
+        if (self::$instance === null) {
+            self::$instance = new self();
+        }
+
+        return self::$instance;
+    }
+
 
     /**
      * ilAzureADConfigGUI constructor
@@ -70,6 +91,8 @@ class ilAzureADConfigGUI extends ilPluginConfigGUI
                     case self::CMD_CONFIGURE:
                     case self::CMD_UPDATE_CONFIGURE:
                     case self::CMD_SAVE:
+                    case self::CMD_SYNCHRONIZE:
+                    case self::CMD_STATUS:
                         $this->{$cmd}();
                         break;
 
@@ -95,6 +118,11 @@ class ilAzureADConfigGUI extends ilPluginConfigGUI
             $this->plugin_object->txt("configuration"),
             $ilCtrl->getLinkTarget($this, self::CMD_CONFIGURE)
         );
+        $DIC->tabs()->addSubTab(self::SUBTAB_SETTINGS, $this->getPluginObject()->txt("tab_general_settings"), $DIC->ctrl()
+            ->getLinkTarget($this, self::CMD_CONFIGURE));
+
+        $DIC->tabs()->addSubTab(self::SUBTAB_STATUS, $this->getPluginObject()->txt("tab_status"), $DIC->ctrl()
+            ->getLinkTarget($this, self::SUBTAB_STATUS));
     }
 
 
@@ -129,6 +157,17 @@ class ilAzureADConfigGUI extends ilPluginConfigGUI
         
         $pl=$this->getPluginObject();
         
+        $DIC->toolbar()->setFormAction($DIC->ctrl()->getFormAction($this));
+
+        $button = ilSubmitButton::getInstance();
+        $button->setCaption($pl->txt('run_sync'), false);
+        $button->setCommand(self::CMD_SYNCHRONIZE);
+        $DIC->toolbar()->addButtonInstance($button);
+
+        // $button = ilSubmitButton::getInstance();
+        // $button->setCaption($pl->txt('status'), false);
+        // $button->setCommand(self::CMD_STATUS);
+        // $DIC->toolbar()->addButtonInstance($button);
         
         include_once("Services/Form/classes/class.ilPropertyFormGUI.php");
         $this->form=new ilPropertyFormGUI();
@@ -148,13 +187,21 @@ class ilAzureADConfigGUI extends ilPluginConfigGUI
         $this->form->addItem($provider);
         
 
-        $secret=new ilPasswordInputGUI($pl->txt("secret"), "secret");
-        $secret->setRequired(true);
-        $secret->setMaxLength(256);
-        $secret->setSize(6);
-        //$secret->setInfo($pl->txt("secret"));
-        $secret->setRetype(false);
-        $this->form->addItem($secret);
+        $apikey=new ilPasswordInputGUI($pl->txt("apikey"), "apikey");
+        $apikey->setRequired(true);
+        $apikey->setMaxLength(256);
+        $apikey->setSize(6);
+        //$apikey->setInfo($pl->txt("apikey_info"));
+        $apikey->setRetype(false);
+        $this->form->addItem($apikey);
+
+        $secretkey=new ilPasswordInputGUI($pl->txt("secretkey"), "secretkey");
+        $secretkey->setRequired(true);
+        $secretkey->setMaxLength(256);
+        $secretkey->setSize(6);
+        //$secretkey->setInfo($pl->txt("secretkey_info"));
+        $secretkey->setRetype(false);
+        $this->form->addItem($secretkey);
         
 
         $logout_scope= new ilRadioGroupInputGUI($pl->txt("logout_scope"), "logout_scope");
@@ -229,7 +276,8 @@ class ilAzureADConfigGUI extends ilPluginConfigGUI
         if ($this->form->checkInput()) {
             $this->settings->setActive((int)$this->form->getInput("active"));
             $this->settings->setProvider($this->form->getInput("provider"));
-            $this->settings->setSecret($this->form->getInput("secret"));
+            $this->settings->setApiKey($this->form->getInput("apikey"));
+            $this->settings->setSecretKey($this->form->getInput("secretkey"));
             $this->settings->setLogoutScope((int)$this->form->getInput("logout_scope"));
             $this->settings->useCustomSession((bool)$this->form->getInput("is_custom_session"));
             $this->settings->setSessionDuration($this->form->getInput("session_duration"));
@@ -273,12 +321,27 @@ class ilAzureADConfigGUI extends ilPluginConfigGUI
     {
         $values['active']=$this->settings->getActive();
         $values['provider']=$this->settings->getProvider();
-        $values['secret']=$this->settings->getSecret();
+        $values['secretkey']=$this->settings->getSecretKey();
+        $values['apikey']=$this->settings->getApiKey();
         $values['logout_scope']=$this->settings->getLogoutScope();
         $values['is_custom_session']=$this->settings->isCustomSession();
         $values['session_duration']=$this->settings->getSessionDuration();
         $values['role']=$this->settings->getRole();
         $values['sync_allowed']=$this->settings->isSyncAllowed();
         $this->form->setValuesByArray($values);
+    }
+
+    public function synchronize()
+    {
+        global $ilCtrl;
+
+        include_once("Customizing/global/plugins/Services/Authentication/AuthenticationHook/AzureAD/classes/class.ilAzureADCron.php");
+        $job = new ilAzureADCron();
+        $results =  $job->run();
+        $ilCtrl->redirect($this, "configure");
+
+    }
+    public function status()
+    {
     }
 }

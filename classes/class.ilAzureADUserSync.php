@@ -133,10 +133,7 @@ class ilAzureADUserSync
      */
     public function updateUser()
     {
-        //$this->logger->info("Session duration ".$this->settings->getValue("session_duration"));
-        // if ($this->needsCreation() && !$this->settings->getValue("allow_sync")) {
-        //     throw new /*AzureADSyncForbidden*/ Exception('No internal account given.');
-        // }
+
 
         $this->transformToXml();
 
@@ -238,6 +235,15 @@ class ilAzureADUserSync
 
                 case 'companyName':
                     $this->writer->xmlElement('Institution', [], $value);
+                    break;
+                case 'jobTitle': 
+                    $this->writer->xmlElement(
+                        'UserDefinedField',
+                        [
+                            'Name' => "JobTitle"
+                        ],
+                        $value
+                    );
                     break;
 
                 case 'employeeId':
