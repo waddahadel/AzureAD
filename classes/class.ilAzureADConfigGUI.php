@@ -247,7 +247,7 @@ class ilAzureADConfigGUI extends ilPluginConfigGUI
 
         $cb = new ilCheckboxInputGUI($pl->txt("sync_allowed"), "sync_allowed");
         $cb->setRequired(false);
-        $cb->setValue((int) $values['sync_allowed']);
+        $is_active->setChecked((bool) $values['sync_allowed']);
         //$cb->setInfo($pl->txt("sync_allowed"));
         $this->form->addItem($cb);
     

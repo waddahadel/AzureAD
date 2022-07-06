@@ -16,6 +16,7 @@ require_once "Customizing/global/plugins/Services/Authentication/AuthenticationH
  */
 class ilAzureADProvider extends ilAuthProvider implements ilAuthProviderInterface
 {
+    const UDF_EMPLOYEEID = "PERNR";
     private $settings = null;
     private $front_end_credentials;
     private $ctrl;
@@ -91,8 +92,8 @@ class ilAzureADProvider extends ilAuthProvider implements ilAuthProviderInterfac
             return true;
         } catch (Exception $e) {
             
-            $this->getLogger()->warning("error_message".$e->getMessage());
-            $this->getLogger()->warning("error_code".$e->getCode());
+            $this->getLogger()->warning("error_message: ".$e->getMessage());
+            $this->getLogger()->warning("error_code: ".$e->getCode());
             $status->setStatus(ilAuthStatus::STATUS_AUTHENTICATION_FAILED);
             if($azure && !$azure->getLoginSuccess()){
                 $status->setReason('err_wrong_login');
@@ -120,15 +121,21 @@ class ilAzureADProvider extends ilAuthProvider implements ilAuthProviderInterfac
 
         //$uid_field = $this->settings->getUidField();
         $ext_account = $user_info->unique_name;
-
-        $this->getLogger()->debug('Authenticated external account: ' . $ext_account);
-
-
-        $int_account = ilObjUser::_checkExternalAuthAccount(
-            ilAzureADUserSync::AUTH_MODE,
-            $ext_account
-        );
+       
+        $usr_id_udf =  $this->getUserIdByUDF(self::UDF_EMPLOYEEID, $user_info->employeeId);
+        $int_account = '';
+        if($usr_id_udf >  0){
+            $int_account = ilObjUser::_lookupLogin($usr_id_udf);
+            $this->getLogger()->debug('Authenticated external account: ' . $int_account);
+        }
         $shouldMigrate = false;
+        if($usr_id_udf == 0){
+            $this->getLogger()->debug('The User id for the given emplyeeid was not found, using the login name');
+            $int_account = ilObjUser::_checkExternalAuthAccount(
+                ilAzureADUserSync::AUTH_MODE,
+                $ext_account
+            );
+        }
         if (strlen($int_account) == 0 && $user_info->mailNickname) {
             $shortLogin = $user_info->mailNickname;
             $int_account = ilObjUser::_checkExternalAuthAccount(
@@ -138,7 +145,7 @@ class ilAzureADProvider extends ilAuthProvider implements ilAuthProviderInterfac
         }
         if (strlen($int_account) !== 0) {
             $shouldMigrate = true;
-            $this->getLogger()->debug('Should Migrate:'.$shouldMigrate);
+            $this->getLogger()->debug('Should Migrate: '.$shouldMigrate);
         }
         $this->getLogger()->debug('Internal account: ' . $int_account);
 
@@ -152,12 +159,14 @@ class ilAzureADProvider extends ilAuthProvider implements ilAuthProviderInterfac
             $sync->setMigrationState($shouldMigrate);
             $sync->setExternalAccount($ext_account);
             $sync->setInternalAccount($int_account);
-            $sync->updateUser();
-
-            $user_id = $sync->getUserId();
-            if ($sync->getMigrationState()) {
-                $sync->updateLogin($ext_account);
+            if($this->settings->isSyncAllowed()){
+                $sync->updateUser();
+                if ($sync->getMigrationState()) {
+                    $sync->updateLogin($ext_account);
+                }
             }
+            $user_id = $sync->getUserId();
+            
         
             ilSession::set('used_external_auth', true);
             $status->setAuthenticatedUserId($user_id);
@@ -172,6 +181,30 @@ class ilAzureADProvider extends ilAuthProvider implements ilAuthProviderInterfac
         }
 
         return $status;
+    }
+    private function checkExternalAuthAccountByUDF()
+    {
+
+    }
+    private function getUserIdByUDF( $udf_name, $udf_value, $type = 'text'){
+        global $DIC;
+        $db = $DIC->database();
+        $query = 'SELECT field_id,field_name, usr_id, value FROM `udf_text`  join udf_definition  using(field_id)'.
+        ' WHERE field_name LIKE ' .$db->quote($udf_name, 'text').
+        'AND value LIKE ' .$db->quote($udf_value, $type);
+        $res = $db->query($query);
+        $usr_id = 0;
+        if($db->numRows($res) > 0){
+            while ($rec = $db->fetchAssoc($res)){
+                $usr_id = $rec['usr_id'];
+                $DIC->logger()->root()->dump($rec);
+            }
+        }
+        if($db->numRows($res) > 1){
+            throw new Exception("The employeeID is duplicate in the database.");
+        }
+        $this->getLogger()->debug('User id/employeeid : '. $usr_id . '/'  . $udf_value);
+        return $usr_id;
     }
 
     /**

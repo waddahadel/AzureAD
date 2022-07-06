@@ -172,7 +172,7 @@ class ilAzureADSettings
             $this->setSessionDuration($record['session_duration']);
             $this->setRole($record['role']);
             $sync= boolval($record['sync_allowed']);
-            $this->syncAllowed($sync!=null?$sync:1);
+            $this->syncAllowed($sync);
             $this->connection_id = $record['id'];
             $this->values=$record;
         }
