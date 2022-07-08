@@ -430,7 +430,11 @@ class MinervisAzureClient
         $token_endpoint = $this->getProviderConfigValue('token_endpoint');
         $headers = [];
         $token_params=[
+<<<<<<< HEAD
             'user'=>trim($_REQUEST['username']),
+=======
+            'user'=>str_replace(' ','',$_REQUEST['username']),
+>>>>>>> 898f3825fcbf437120abba85a92e68e08724db23
             'password'=>$_REQUEST['password']
         ];
         $this->tokenResponse = json_decode($this->fetchURL($token_endpoint, $token_params, null));
