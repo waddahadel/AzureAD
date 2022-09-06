@@ -3,18 +3,13 @@
 
 // namespace Minervis;
 
-
-// if (!class_exists('\phpseclib\Crypt\RSA') && !class_exists('Crypt_RSA')) {
-//     user_error('Unable to find phpseclib Crypt/RSA.php.  Ensure phpseclib is installed and in include_path before you include this file');
-// }
-
 /**
  * A wrapper around base64_decode which decodes Base64URL-encoded data,
  * which is not the same alphabet as base64.
  * @param string $base64url
  * @return bool|string
  */
-function base64url_decode($base64url)
+function base64url_decode(string $base64url)
 {
     return base64_decode(b64url2b64($base64url));
 }
@@ -27,7 +22,7 @@ function base64url_decode($base64url)
  * @param string $base64url
  * @return string
  */
-function b64url2b64($base64url)
+function b64url2b64(string $base64url): string
 {
     // "Shouldn't" be necessary, but why not
     $padding = strlen($base64url) % 4;
@@ -144,13 +139,12 @@ class MinervisAzureClient
     protected $enc_type = PHP_QUERY_RFC1738;
 
     /**
-     * @param $provider_url string optional
+     * @param $provider_url string|null optional
      *
-     * @param $client_id string optional
-     * @param $client_secret string optional
-     * @param null $issuer
-     */
-    public function __construct($provider_url = null, $api_key = null, $secret_key=null)
+     * @param $api_key string optional
+     * @param $secret_key string optional
+ */
+    public function __construct(string $provider_url = null, $api_key = null, $secret_key=null)
     {
         $this->setProviderURL($provider_url);
         $this->setApiKey($api_key);
@@ -216,6 +210,7 @@ class MinervisAzureClient
         $this->providerConfig['token_endpoint']=$providerUrl."/v1/ilias/app/azure/login";
         $this->providerConfig['verify_endpoint']=$providerUrl."/v1/ilias/app/azure/verify";
         $this->providerConfig['check_endpoint']=$providerUrl."/v1/ilias/app/azure/check";
+        $this->providerConfig['snyc_endpoint']=$providerUrl."/v1/ilias/app/azure/users";
     }
 
     public function configureInternalProxy()
@@ -245,7 +240,7 @@ class MinervisAzureClient
         if (isset($_REQUEST['code'])) {
             // echo "found request code";
             $code = $_REQUEST['code'];
-            //$token_json = $this->requestTokens($code);
+            $token_json = $this->requestTokens($code);
 
             // Throw an error if the server returns one
             if (isset($token_json->error)) {
@@ -417,6 +412,55 @@ class MinervisAzureClient
     }
 
     /**
+     * @throws MinervisAzureClientException
+     */
+    public  function retrieveUsers($top = 100, $skip_token = '') {
+        $users_endpoint = $this->getProviderConfigValue('sync_endpoint');
+        $body_params = array( 'top' => (string) $top);
+        if(!empty($skip_token)){
+            $body_params [] = array(
+                "skiptoken" => $skip_token
+            );
+        }
+        $results = json_decode($this->fetchURL($users_endpoint, $body_params, null, false));
+
+    }
+
+    /**
+     * @param int $status_code
+     * @return void
+     * @throws MinervisAzureClientException
+     */
+    public function handleStatus(int $status_code){
+        $message = '';
+        switch($status_code){
+            case self::CODE_INVALID_API_OR_SECRET:
+                if($this->tokenResponse){
+                    $message = 'Status Code '.$status_code . ': Invalid  API or Secret';
+                }else{
+                    $message = 'Status Code '.$status_code . ': Invalid Login credentials';
+                    $this->login_success = false;
+                }
+                break;
+            case self::CODE_METHOD_NOT_ALLOWED:
+                $message = 'Status Code '.$status_code . ': Method not allowed';
+                break;
+            case self::CODE_SERVER_ERROR:
+                $message = 'Status Code '.$status_code . ': Server error';
+                break;
+            case self::CODE_UNSUPPORTED_MEDIA:
+                $message = 'Status Code '.$status_code. ': Unsupported media type';
+                break;
+
+            default:
+        }
+        if($message){
+            $this->logger->info($message);
+            throw new MinervisAzureClientException($message);
+        }
+    }
+
+    /**
      * Requests ID and Access tokens
      *
      * @param string $code
@@ -537,19 +581,6 @@ class MinervisAzureClient
         return $this->userInfo;
     }
 
-    /**
-     * @param array $keys
-     * @param array $header
-     * @throws MinervisAzureClientException
-     * @return object
-     */
-    private function get_key_for_header($keys, $header)
-    {
-        return null;
-    }
-
-
-  
 
     /**
      * @param string $str
@@ -568,7 +599,7 @@ class MinervisAzureClient
      * @param int $section the section we would like to decode
      * @return object
      */
-    protected function decodeJWT($jwt, $section = 0)
+    protected function decodeJWT(string $jwt, int $section = 0): object
     {
         $parts = explode('.', $jwt);
         return json_decode(base64url_decode($parts[$section]));
