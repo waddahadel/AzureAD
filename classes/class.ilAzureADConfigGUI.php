@@ -15,6 +15,7 @@ class ilAzureADConfigGUI extends ilPluginConfigGUI
     const TAB_CONFIGURATION = "configuration";
     const CMD_SAVE = "save";
     const CMD_SYNCHRONIZE = "synchronize";
+    const CMD_RETRIEVE_USERDATA = "retrieveUsers";
     const CMD_STATUS = "status";
     const SUBTAB_SETTINGS = "settings";
     const SUBTAB_STATUS = "status";
@@ -93,6 +94,7 @@ class ilAzureADConfigGUI extends ilPluginConfigGUI
                     case self::CMD_SAVE:
                     case self::CMD_SYNCHRONIZE:
                     case self::CMD_STATUS:
+                    case self::CMD_RETRIEVE_USERDATA:
                         $this->{$cmd}();
                         break;
 
@@ -164,10 +166,10 @@ class ilAzureADConfigGUI extends ilPluginConfigGUI
         $button->setCommand(self::CMD_SYNCHRONIZE);
         $DIC->toolbar()->addButtonInstance($button);
 
-        // $button = ilSubmitButton::getInstance();
-        // $button->setCaption($pl->txt('status'), false);
-        // $button->setCommand(self::CMD_STATUS);
-        // $DIC->toolbar()->addButtonInstance($button);
+        $button = ilSubmitButton::getInstance();
+        $button->setCaption('synchronize user data', false);
+        $button->setCommand(self::CMD_RETRIEVE_USERDATA);
+        $DIC->toolbar()->addButtonInstance($button);
         
         include_once("Services/Form/classes/class.ilPropertyFormGUI.php");
         $this->form=new ilPropertyFormGUI();
@@ -337,6 +339,16 @@ class ilAzureADConfigGUI extends ilPluginConfigGUI
 
         include_once("Customizing/global/plugins/Services/Authentication/AuthenticationHook/AzureAD/classes/class.ilAzureADCron.php");
         $job = new ilAzureADCron();
+        $results =  $job->run();
+        $ilCtrl->redirect($this, "configure");
+
+    }
+    public function retrieveUsers()
+    {
+        global $ilCtrl;
+
+        include_once("Customizing/global/plugins/Services/Authentication/AuthenticationHook/AzureAD/classes/class.ilAzureADCronSyncUserData.php");
+        $job = new ilAzureADCronSyncUserData();
         $results =  $job->run();
         $ilCtrl->redirect($this, "configure");
 

@@ -17,6 +17,11 @@ require_once "Customizing/global/plugins/Services/Authentication/AuthenticationH
 class ilAzureADProvider extends ilAuthProvider implements ilAuthProviderInterface
 {
     const UDF_EMPLOYEEID = "PERNR";
+    const UDF_JOB_TITLE = "JobTitle";
+    /**
+     * @var ilAzureADProvider
+     */
+    private static $instance;
     private $settings = null;
     private $front_end_credentials;
     private $ctrl;
@@ -32,16 +37,25 @@ class ilAzureADProvider extends ilAuthProvider implements ilAuthProviderInterfac
 
     /**
      * ilAzureADProvider constructor.
-     * @param ilAuthCredentials $credentials
+     * @param ilAuthCredentials| null $credentials
      */
     public function __construct(ilAuthCredentials $credentials)
     {
         parent::__construct($credentials);
         $this->settings = ilAzureADSettings::getInstance();
-        //$this->az_settings = ilAzureADSettings::getInstance();
         $this->front_end_credentials= new ilAzureADFrontendCredentials();
         $this->logger = ilLoggerFactory::getLogger('ilAzureADProvider');
         $this->ctrl = $GLOBALS['ilCtrl'];
+    }
+
+    public static function getInstance() : self
+    {
+        if (self::$instance === null) {
+            $credentials = new ilAzureADFrontendCredentials();
+            self::$instance = new self($credentials);
+        }
+
+        return self::$instance;
     }
 
     /**
@@ -67,10 +81,10 @@ class ilAzureADProvider extends ilAuthProvider implements ilAuthProviderInterfac
 
     /**
      * Do authentication
-     * @param \ilAuthStatus $status Authentication status
+     * @param ilAuthStatus $status Authentication status
      * @return bool
      */
-    public function doAuthentication(\ilAuthStatus $status)
+    public function doAuthentication(\ilAuthStatus $status): bool
     {
         global $ilUser;
         $azure = null;
@@ -186,7 +200,7 @@ class ilAzureADProvider extends ilAuthProvider implements ilAuthProviderInterfac
     {
 
     }
-    private function getUserIdByUDF( $udf_name, $udf_value, $type = 'text'){
+    public function getUserIdByUDF( $udf_name, $udf_value, $safety_check = true, $type = 'text'){
         global $DIC;
         $db = $DIC->database();
         $query = 'SELECT field_id,field_name, usr_id, value FROM `udf_text`  join udf_definition  using(field_id)'.
@@ -197,10 +211,9 @@ class ilAzureADProvider extends ilAuthProvider implements ilAuthProviderInterfac
         if($db->numRows($res) > 0){
             while ($rec = $db->fetchAssoc($res)){
                 $usr_id = $rec['usr_id'];
-                $DIC->logger()->root()->dump($rec);
             }
         }
-        if($db->numRows($res) > 1){
+        if($db->numRows($res) > 1 and $safety_check){
             throw new Exception("The employeeID is duplicate in the database.");
         }
         $this->getLogger()->debug('User id/employeeid : '. $usr_id . '/'  . $udf_value);
@@ -212,7 +225,19 @@ class ilAzureADProvider extends ilAuthProvider implements ilAuthProviderInterfac
      */
     private function initClient(string $base_url, string $apiKey, string $secretKey = '') : MinervisAzureClient
     {
-        $azure=new MinervisAzureClient($base_url, $apiKey, $secretKey);
-        return $azure;
+        //Add Proxy
+        require_once('Services/Http/classes/class.ilProxySettings.php');
+        $proxyURL = '';
+        if(ilProxySettings::_getInstance()->isActive())
+        {
+            $proxyHost = ilProxySettings::_getInstance()->getHost();
+            $proxyPort = ilProxySettings::_getInstance()->getPort();
+            $proxyURL = $proxyHost . ":" . $proxyPort;
+            $this->getLogger()->info("Proxying through " . $proxyURL);
+
+        }
+         if(!$proxyURL) $this->getLogger()->info("No Proxy server used." );
+
+        return new MinervisAzureClient($base_url, $apiKey, $secretKey, $proxyURL);
     }
 }

@@ -1,7 +1,6 @@
 <?php
 
-
-// namespace Minervis;
+require_once "Customizing/global/plugins/Services/Authentication/AuthenticationHook/AzureAD/AzureClient/ADRequest.php";
 
 /**
  * A wrapper around base64_decode which decodes Base64URL-encoded data,
@@ -137,6 +136,10 @@ class MinervisAzureClient
     private $redirectURL;
 
     protected $enc_type = PHP_QUERY_RFC1738;
+    /**
+     * @var mixed|string
+     */
+    private $proxy;
 
     /**
      * @param $provider_url string|null optional
@@ -144,7 +147,7 @@ class MinervisAzureClient
      * @param $api_key string optional
      * @param $secret_key string optional
  */
-    public function __construct(string $provider_url = null, $api_key = null, $secret_key=null)
+    public function __construct(string $provider_url = null, $api_key = null, $secret_key = null, $proxy = '')
     {
 	global $DIC;
         $this->clientLogger=$DIC->logger()->root();
@@ -152,6 +155,7 @@ class MinervisAzureClient
         $this->setApiKey($api_key);
         $this->setSecretKey($secret_key);
         $this->setEndpoints();
+        $this->setProxy($proxy);
         $this->logger = ilLoggerFactory::getLogger('MinervisAzureClient');
     }
     
@@ -162,6 +166,11 @@ class MinervisAzureClient
     public function setProviderURL($provider_url)
     {
         $this->providerConfig['providerUrl'] = $provider_url;
+    }
+
+    public function setProxy($proxy)
+    {
+        $this->providerConfig['proxy'] = $proxy;
     }
     
     /**
@@ -203,16 +212,17 @@ class MinervisAzureClient
     }
 
 
-
-    
+    /**
+     * @return void
+     */
     private function setEndpoints()
     {
         $providerUrl=$this->providerConfig['providerUrl'];
-        $this->providerConfig['refresh_endpoint']=$providerUrl."/v1/ilias/app/azure/refresh";
-        $this->providerConfig['token_endpoint']=$providerUrl."/v1/ilias/app/azure/login";
-        $this->providerConfig['verify_endpoint']=$providerUrl."/v1/ilias/app/azure/verify";
-        $this->providerConfig['check_endpoint']=$providerUrl."/v1/ilias/app/azure/check";
-        $this->providerConfig['snyc_endpoint']=$providerUrl."/v1/ilias/app/azure/users";
+        $this->providerConfig['refresh_endpoint']= $providerUrl . "/v1/ilias/app/azure/refresh";
+        $this->providerConfig['token_endpoint']= $providerUrl . "/v1/ilias/app/azure/login";
+        $this->providerConfig['verify_endpoint']= $providerUrl . "/v1/ilias/app/azure/verify";
+        $this->providerConfig['check_endpoint']= $providerUrl . "/v1/ilias/app/azure/check";
+        $this->providerConfig['sync_endpoint']= $providerUrl . "/v1/ilias/app/azure/users";
     }
 
     public function configureInternalProxy()
@@ -417,15 +427,31 @@ class MinervisAzureClient
      * @throws MinervisAzureClientException
      */
     public  function retrieveUsers($top = 100, $skip_token = '') {
+        global $DIC;
         $users_endpoint = $this->getProviderConfigValue('sync_endpoint');
         $body_params = array( 'top' => (string) $top);
         if(!empty($skip_token)){
-            $body_params [] = array(
-                "skiptoken" => $skip_token
-            );
+            $body_params["skiptoken"] = $skip_token;
         }
-        $results = json_decode($this->fetchURL($users_endpoint, $body_params, null, false));
+        $headers=array(
+            'Content-Type: application/json',
+            'APIKey:  '. $this->getProviderConfigValue('api_key'),
+            'APISecret: '. $this->getProviderConfigValue('secret_key')
 
+        );
+        $response = $this->fetchURL($users_endpoint, $body_params, $headers, false);
+        $this->handleStatus($this->responseCode);
+        return json_decode($response);
+       /* $request = new ADRequest(
+            $users_endpoint,
+            $headers,
+            $body_params,
+            ADRequest::GET_METHOD,
+            "www-proxy.vpn.minervis.com:3128"
+        );
+
+        $response = $request->send();
+        $DIC->logger()->root()->dump($response->getBody());*/
     }
 
     /**
@@ -477,7 +503,7 @@ class MinervisAzureClient
             'user'=>str_replace(' ','',$_REQUEST['username']),
             'password'=>$_REQUEST['password']
         ];
-        $this->tokenResponse = json_decode($this->fetchURL($token_endpoint, $token_params, null));
+        $this->tokenResponse = json_decode($this->fetchURL($token_endpoint, $token_params, array()));
         //var_dump($this->tokenResponse);
         $message = '';
         switch($this->responseCode){
@@ -569,7 +595,7 @@ class MinervisAzureClient
 
         
 
-        $json = json_decode($this->fetchURL($token_endpoint, $token_params, null));
+        $json = json_decode($this->fetchURL($token_endpoint, $token_params, array()));
 
         if ($this->getResponseCode()<>400) {
             return false;
@@ -613,14 +639,14 @@ class MinervisAzureClient
 
     /**
      * @param string $url
-     * @param string | null $post_body string If this is set the post type will be POST
+     * @param array | null $post_body string If this is set the post type will be POST
      * @param array $headers Extra headers to be send with the request. Format as 'NameHeader: ValueHeader'
-     * @throws MinervisAzureClientException
      * @return mixed
+     *@throws MinervisAzureClientException
      */
-    protected function fetchURL($url, $post_body = null, $headers = array(), $method_post = true)
+    protected function fetchURL(string $url, array $post_body = null, array $headers = array(), $method_post = true)
     {
-        $proxy="www-proxy.vpn.minervis.com:3128";
+        $proxy = $this->getProviderConfigValue('proxy');
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $url);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
@@ -723,7 +749,7 @@ class MinervisAzureClient
         $body = array(
             "user" => $ext_account
         );
-        $output = json_decode($this->fetchURL($this->getProviderConfigValue('check_endpoint'), $body, null, false));
+        $output = json_decode($this->fetchURL($this->getProviderConfigValue('check_endpoint'), $body, array(), false));
         $this->logger->dump($output);
         $message = '';
         switch($this->responseCode){
