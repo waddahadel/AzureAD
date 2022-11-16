@@ -173,15 +173,15 @@ class ilAzureADCronSyncUserData extends ilCronJob
      * @throws MinervisAzureClientException
      */
     public function getAllNext() {
-        $max_iter = 40;
+        $max_iter = 100;
         $counter = 0;
         $i = 0;
         while($i<$max_iter){
             $response = $this->client->retrieveUsers($this->top, $this->skiptoken);
             //$this->getLogger()->dump($response);
-            if(!$response  ) break;
+            if(!$response  || !isset($response) || !$response->value) break;
             $this->skiptoken = $response->skiptoken;
-            $this->synchronize($response->value);
+            $this->synchronize($response->value, $i);
             if(  count($response->value) < $this->top ) break;
             $i ++ ;
 
@@ -197,7 +197,7 @@ class ilAzureADCronSyncUserData extends ilCronJob
 
     private function checkMatches()
     {
-        $negative_matches_query = "SELECT * from usr_data where usr_id NOT IN (" . implode( ", ", $this->positive_matches) . ")";
+        $negative_matches_query = "SELECT * from usr_data where active = 1 AND usr_id NOT IN (" . implode( ", ", $this->positive_matches) . ")";
         $cursor  = $this->dic->database()->query($negative_matches_query);
         $this->getLogger()->info($cursor->numRows() . " do not have matches");
         //$this->getLogger()->dump($this->counter);
@@ -217,11 +217,11 @@ class ilAzureADCronSyncUserData extends ilCronJob
         $userObj->update();
     }
 
-    public function synchronize(array $users): array
+    public function synchronize(array $users, int $iter = 0): array
     {
 
         $auth_provider = ilAzureADProvider::getInstance();
-        $this->getLogger()->info("The set contains  " . count($users). " users");
+        $this->getLogger()->info($iter . ": The set contains  " . count($users). " users");
         $this->counter['users'] += count($users);
         foreach ($users as $user){
             $usr_id = $auth_provider->getUserIdByUDF(ilAzureADProvider::UDF_EMPLOYEEID, $user->employeeId, false);
@@ -239,11 +239,20 @@ class ilAzureADCronSyncUserData extends ilCronJob
         return $this->counter;
     }
 
+    public function areNegativeMatchesDeleted()
+    {
+
+    }
+
     public function exportNegativeMatches(){
-        $negative_matches_query = "SELECT * from usr_data where usr_id NOT IN (" . implode( ", ", $this->positive_matches) . ")";
-        $cursor  = $this->dic->database()->query($negative_matches_query);
+        $negative_matches_query = "SELECT * from usr_data where active = 1 AND  usr_id NOT IN (" . implode( ", ", $this->positive_matches) . ")";
+        $cursor  =$this->dic->database()->query($negative_matches_query);
+        $negative_matches = array();
+        while($row = $this->dic->database()->fetchAssoc($cursor)){
+            $negative_matches [] = $row['usr_id'];
+        }
         $usr_folder = new ilObjUserFolder(7);
-        $usr_folder->buildExportFile(ilObjUserFolder::FILE_TYPE_CSV, $this->positive_matches);
+        $usr_folder->buildExportFile(ilObjUserFolder::FILE_TYPE_CSV, $negative_matches);
     }
 
 }

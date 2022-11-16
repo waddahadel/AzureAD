@@ -22,7 +22,18 @@ class ilAzureADCron extends ilCronJob
     public function __construct( ) 
     {
         $this->settings = ilAzureADSettings::getInstance();
-        $this->client = new MinervisAzureClient($this->settings->getProvider(), $this->settings->getApiKey(), $this->settings->getSecretKey());
+
+        $proxyURL = '';
+        if(ilProxySettings::_getInstance()->isActive())
+        {
+            $proxyHost = ilProxySettings::_getInstance()->getHost();
+            $proxyPort = ilProxySettings::_getInstance()->getPort();
+            $proxyURL = $proxyHost . ":" . $proxyPort;
+            //$this->getLogger()->info("Proxying through " . $proxyURL);
+
+        }
+        //if(!$proxyURL) $this->getLogger()->info("No Proxy server used." );
+        $this->client = new MinervisAzureClient($this->settings->getProvider(), $this->settings->getApiKey(), $this->settings->getSecretKey(), $proxyURL);
         include_once("Customizing/global/plugins/Services/Authentication/AuthenticationHook/AzureAD/classes/class.ilAzureADPlugin.php");
         $this->pl = ilAzureADPlugin::getInstance();
     }
@@ -107,7 +118,7 @@ class ilAzureADCron extends ilCronJob
                 throw new Exception("Synchronization with AzureAD is not activate. Please contact admin");
             }
             $users =  $this->settings->getAllADUsers();
-            $DIC->logger()->root()->dump($users);
+            $DIC->logger()->root()->info("A total of " . count($users) . " will be checked");
             foreach($users as $user){
                 $result = $this->client->checkUserDeleted($user['ext_account']);
                 if(!$result){
@@ -116,12 +127,19 @@ class ilAzureADCron extends ilCronJob
                     $user->update();
                 }
             }
+            $cron_result->setStatus(ilCronJobResult::STATUS_OK);
         } catch (Exception $e) {
+            $DIC->logger()->root()->info($e->getMessage());
             $cron_result->setStatus(ilCronJobResult::STATUS_FAIL);
         }
-        $cron_result->setStatus(ilCronJobResult::STATUS_OK);
+        
 
         return $cron_result;
+    }
+
+    public function sendSummary()
+    {
+
     }
 
 }

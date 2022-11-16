@@ -157,6 +157,7 @@ class MinervisAzureClient
         $this->setEndpoints();
         $this->setProxy($proxy);
         $this->logger = ilLoggerFactory::getLogger('MinervisAzureClient');
+        //$this->logger->dump($this->providerConfig);
     }
     
 
@@ -749,8 +750,14 @@ class MinervisAzureClient
         $body = array(
             "user" => $ext_account
         );
-        $output = json_decode($this->fetchURL($this->getProviderConfigValue('check_endpoint'), $body, array(), false));
-        $this->logger->dump($output);
+        $headers=array(
+            'Content-Type: application/json',
+            'APIKey:  '. $this->getProviderConfigValue('api_key'),
+            'APISecret: '. $this->getProviderConfigValue('secret_key')
+
+        );
+        $output = json_decode($this->fetchURL($this->getProviderConfigValue('check_endpoint'), $body, $headers, false));
+        //$this->logger->dump($output);
         $message = '';
         switch($this->responseCode){
             case self::CODE_NO_CONTENT:
@@ -772,7 +779,7 @@ class MinervisAzureClient
 
             default:
         }
-        $this->logger->info("Encountered an error with " . $message);
+        $this->logger->info("Encountered an error with " . $this->responseCode . " : " .$message);
         throw new MinervisAzureClientException(" Encountered an error with " . $message);
         return false;
 

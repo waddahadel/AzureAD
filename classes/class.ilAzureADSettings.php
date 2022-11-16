@@ -414,9 +414,10 @@ class ilAzureADSettings
         global $DIC;
 
         $ilDB = $DIC['ilDB'];
-        $query = 'SELECT usr_id, ext_account FROM usr_data ' .
-            'WHERE ext_account LIKE ' . $ilDB->quote('%@globus.net', 'text') .
-            'AND active = '. $ilDB->quote(intval($load_active_only), 'integer');
+        $query = 'SELECT usr_id, (CASE WHEN ext_account LIKE ' . $ilDB->quote('%@globus.net', 'text') . ' THEN ext_account ELSE login END )AS ext_account FROM usr_data ' .
+            'WHERE ext_account NOT LIKE ' . $ilDB->quote('%@globus.%', 'text') .
+             'AND login LIKE ' . $ilDB->quote('%@globus.%', 'text') .
+            ' AND active = '. $ilDB->quote(intval($load_active_only), 'integer');
         $res = $ilDB->query($query);
         $data = null;
         while ($row = $ilDB->fetchAssoc($res)) {
@@ -424,6 +425,9 @@ class ilAzureADSettings
                 'usr_id' => $row['usr_id'],
                 'ext_account' => $row['ext_account']
             );
+            if($row['ext_account'] == "f.abel@globus.net") {
+                $DIC->logger()->root()->info("Abel's account found: ". $row['ext_account'] . " /" . $row['usr_id']);
+            }
         }
         return $data;
     }
