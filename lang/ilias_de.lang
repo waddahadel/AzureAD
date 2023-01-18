@@ -29,5 +29,7 @@ secretkey#:#Geheimschlüssel
 run_sync#:#Synchronisieren
 tab_status#:#Zusammenfassung
 tab_general_settings#:# Allgemeine Einstellungen
-cron_title#:#AzureAD Cron
-cron_description#:#Prüft, ob ein Benutzer in ILIAS immer noch in AzureAD vorhanden ist. Falls Nein, wird der Benutzer inaktiv gesetzt.
+cron_status_subtitle#:#AzureAD Cron
+cron_status_description#:#Prüft, ob ein Benutzer in ILIAS immer noch in AzureAD vorhanden ist. Falls nicht, wird der Benutzer inaktiv gesetzt.
+cron_sync_subtitle#:# Benutzerdaten synchronisieren
+cron_sync_description#:#Der Cron-Job synchronisiert Benutzerdaten in ILIAS mit den in AD

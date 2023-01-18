@@ -224,6 +224,7 @@ class MinervisAzureClient
         $this->providerConfig['verify_endpoint']= $providerUrl . "/v1/ilias/app/azure/verify";
         $this->providerConfig['check_endpoint']= $providerUrl . "/v1/ilias/app/azure/check";
         $this->providerConfig['sync_endpoint']= $providerUrl . "/v1/ilias/app/azure/users";
+        $this->providerConfig['single_user_endpoint']= $providerUrl . "/v1/ilias/app/azure/user";
     }
 
     public function configureInternalProxy()
@@ -453,6 +454,24 @@ class MinervisAzureClient
 
         $response = $request->send();
         $DIC->logger()->root()->dump($response->getBody());*/
+    }
+
+        /**
+     * @throws MinervisAzureClientException
+     */
+    public  function retrieveSingleUser($user) {
+        global $DIC;
+        $users_endpoint = $this->getProviderConfigValue('single_user_endpoint');
+        $body_params = array( 'user' => (string) $user);
+        $headers=array(
+            'Content-Type: application/json',
+            'APIKey:  '. $this->getProviderConfigValue('api_key'),
+            'APISecret: '. $this->getProviderConfigValue('secret_key')
+
+        );
+        $response = $this->fetchURL($users_endpoint, $body_params, $headers, false);
+        $this->handleStatus($this->responseCode);
+        return json_decode($response);
     }
 
     /**

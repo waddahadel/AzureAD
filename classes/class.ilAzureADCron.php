@@ -54,7 +54,7 @@ class ilAzureADCron extends ilCronJob
     public function getTitle() : string
     {
         
-        return ilAzureADPlugin::PLUGIN_NAME . ": " .  $this->pl->txt("cron_title");
+        return ilAzureADPlugin::PLUGIN_NAME . ": " .  $this->pl->txt("cron_status_subtitle");
     }
 
 
@@ -63,7 +63,7 @@ class ilAzureADCron extends ilCronJob
      */
     public function getDescription() : string
     {
-        return ilAzureADPlugin::PLUGIN_NAME . ": " .  $this->pl->txt("cron_description");
+        return ilAzureADPlugin::PLUGIN_NAME . ": " .  $this->pl->txt("cron_status_description");
     }
 
 

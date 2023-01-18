@@ -95,7 +95,7 @@ class ilAzureADCronSyncUserData extends ilCronJob
     public function getTitle() : string
     {
         
-        return ilAzureADPlugin::PLUGIN_NAME . ": " .  $this->pl->txt("cron_title") . "Sync User data";
+        return ilAzureADPlugin::PLUGIN_NAME . ": " . $this->pl->txt("cron_sync_subtitle") ;
     }
 
 
@@ -104,7 +104,7 @@ class ilAzureADCronSyncUserData extends ilCronJob
      */
     public function getDescription() : string
     {
-        return ilAzureADPlugin::PLUGIN_NAME . ": " .  $this->pl->txt("cron_description");
+        return ilAzureADPlugin::PLUGIN_NAME . ": " .  $this->pl->txt("cron_sync_description");
     }
 
 
@@ -153,20 +153,18 @@ class ilAzureADCronSyncUserData extends ilCronJob
         global $DIC;
         $cron_result = new ilCronJobResult();
 
-        /*try {
+        try {
             //Fetch users: How do we identify globus users? external account ***@globus.net,
-            if(!$this->settings->getActive()){
-                throw new Exception("Synchronization with AzureAD is not activate. Please contact admin");
-            }
             $this->client->retrieveUsers();
+            $this->getAllNext();
+            $cron_result->setStatus(ilCronJobResult::STATUS_OK);
         } catch (Exception $e) {
             $cron_result->setStatus(ilCronJobResult::STATUS_FAIL);
         }
-        $cron_result->setStatus(ilCronJobResult::STATUS_OK);
-        */
-
-        $this->getAllNext();
         return $cron_result;
+        
+
+        
     }
 
     /**
@@ -189,6 +187,23 @@ class ilAzureADCronSyncUserData extends ilCronJob
         $this->getLogger()->info("Summary of  Users retrieved in " . $i . " iterations");
         $this->getLogger()->dump($this->counter);
         $this->checkMatches();
+
+        //sync the negative matches
+       $negative_matches = $this->getNegativeMatches();
+        $pos_count = 0;
+        $this->getLogger()->info("Correction for failed matches: " . count($negative_matches));
+        foreach($negative_matches as $user){
+            $data = $this->client->retrieveSingleUser($user['login']);
+            if($data && $data->employeeId){
+                $this->updateUser($user['usr_id'], $data);
+                $this->counter['matches'] ++;
+                $this->positive_matches [] = $user['usr_id'];
+                $pos_count += 1;
+            }else{
+                continue;
+            }
+        }
+        $this->getLogger()->dump($this->counter);
         $this->exportNegativeMatches();
 
     }
@@ -213,6 +228,21 @@ class ilAzureADCronSyncUserData extends ilCronJob
         $udf = array(
             $job_title => $data->jobTitle
         );
+        if($data->mail){
+            $userObj->setLogin($data->mail);
+        }
+        if($data->givenName){
+            $userObj->setFirstname($data->givenName);
+        }
+        if($data->surname){
+            $userObj->setLastname($data->surname);
+        }
+        if($data->companyName){
+            $userObj->setInstitution($data->companyName);
+        }
+        if($data->department){
+            $userObj->setDepartment($data->department);
+        }
         $userObj->setUserDefinedData($udf);
         $userObj->update();
     }
@@ -238,21 +268,29 @@ class ilAzureADCronSyncUserData extends ilCronJob
         }
         return $this->counter;
     }
-
-    public function areNegativeMatchesDeleted()
+    public function getNegativeMatches()
     {
-
-    }
-
-    public function exportNegativeMatches(){
-        $negative_matches_query = "SELECT * from usr_data where active = 1 AND  usr_id NOT IN (" . implode( ", ", $this->positive_matches) . ")";
+        $negative_matches_query = "SELECT * from usr_data where active = 1 AND auth_mode LIKE '" . ilAzureADUserSync::AUTH_MODE . "' AND  usr_id NOT IN (" . implode( ", ", $this->positive_matches) . ")";
         $cursor  =$this->dic->database()->query($negative_matches_query);
         $negative_matches = array();
         while($row = $this->dic->database()->fetchAssoc($cursor)){
-            $negative_matches [] = $row['usr_id'];
+            $negative_matches [] = [
+                'usr_id' => $row['usr_id'],
+                'login' => $row['login']
+            ];
         }
+        $this->getLogger()->dump($negative_matches);
+        return $negative_matches;
+    }
+
+    public function exportNegativeMatches()
+    {
+        $negative_matches = $this->getNegativeMatches();
         $usr_folder = new ilObjUserFolder(7);
-        $usr_folder->buildExportFile(ilObjUserFolder::FILE_TYPE_CSV, $negative_matches);
+        $usr_folder->buildExportFile(ilObjUserFolder::FILE_TYPE_CSV, array_map(function($user){
+            return $user['usr_id'];
+
+        }, $negative_matches));
     }
 
 }
