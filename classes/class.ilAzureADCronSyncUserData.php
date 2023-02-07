@@ -203,8 +203,9 @@ class ilAzureADCronSyncUserData extends ilCronJob
                 continue;
             }
         }
+        $this->getLogger()->info("The following accounts have not been synchronized");
         $this->getLogger()->dump($this->counter);
-        $this->exportNegativeMatches();
+        //$this->exportNegativeMatches();
 
     }
 

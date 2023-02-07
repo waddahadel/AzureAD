@@ -684,7 +684,7 @@ class MinervisAzureClient
         curl_setopt($ch, CURLOPT_PROXY, $proxy);
         curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-        if (!isset($headers)) {
+        if (!isset($headers) || count($headers) == 0) {
             $headers=array(
                 'Content-Type: application/json',
                 'APIKey:  '. $this->getProviderConfigValue('api_key'),
