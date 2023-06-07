@@ -80,7 +80,6 @@ class ilAzureADUserSync
     public function setInternalAccount(string $int_account)
     {
         $this->int_account = $int_account;
-        $this->usr_id = ilObjUser::_lookupId($this->int_account);
     }
 
     /**
@@ -89,6 +88,14 @@ class ilAzureADUserSync
     public function getUserId() : int
     {
         return $this->usr_id;
+    }
+
+    /**
+     * @param int $usr_id
+     */
+    public function setUserId(int $usr_id): void
+    {
+        $this->usr_id = $usr_id;
     }
 
     public function updateLogin($new_login)
@@ -156,6 +163,7 @@ class ilAzureADUserSync
             $this->ext_account
         );
         $this->setInternalAccount($int_account);
+        $this->setUserId(ilObjUser::_lookupId($int_account));
         return true;
     }
 
@@ -286,6 +294,6 @@ class ilAzureADUserSync
         $this->writer->xmlEndTag('User');
         $this->writer->xmlEndTag('Users');
 
-        $this->logger->debug("xmlDumpMem: ".$this->writer->xmlDumpMem());
+        $this->logger->debug("User XML: ".$this->writer->xmlDumpMem());
     }
 }

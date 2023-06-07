@@ -133,6 +133,7 @@ class ilAzureADProvider extends ilAuthProvider implements ilAuthProviderInterfac
             return $status;
         }
 
+        //$this->getLogger()->dump($user_info, ilLogLevel::DEBUG);
         //$uid_field = $this->settings->getUidField();
         $ext_account = $user_info->unique_name;
        
@@ -140,7 +141,7 @@ class ilAzureADProvider extends ilAuthProvider implements ilAuthProviderInterfac
         $int_account = '';
         if($usr_id_udf >  0){
             $int_account = ilObjUser::_lookupLogin($usr_id_udf);
-            $this->getLogger()->debug('Authenticated external account: ' . $int_account);
+            $this->getLogger()->info('Authenticated external account: ' . $int_account);
         }
         $shouldMigrate = false;
         if($usr_id_udf == 0){
@@ -170,9 +171,13 @@ class ilAzureADProvider extends ilAuthProvider implements ilAuthProviderInterfac
                 $status->setReason('err_wrong_login');
                 return $status;
             }
+
             $sync->setMigrationState($shouldMigrate);
             $sync->setExternalAccount($ext_account);
             $sync->setInternalAccount($int_account);
+            if(!$sync->needsCreation()){
+                $sync->setUserId(ilObjUser::_lookupId($int_account));
+            }
             if($this->settings->isSyncAllowed()){
                 $sync->updateUser();
                 if ($sync->getMigrationState()) {
@@ -216,7 +221,7 @@ class ilAzureADProvider extends ilAuthProvider implements ilAuthProviderInterfac
         if($db->numRows($res) > 1 and $safety_check){
             throw new Exception("The employeeID is duplicate in the database.");
         }
-        $this->getLogger()->debug('User id/employeeid : '. $usr_id . '/'  . $udf_value);
+        $this->getLogger()->info('User id/employeeid : '. $usr_id . '/'  . $udf_value);
         return $usr_id;
     }
 
