@@ -63,8 +63,28 @@ class MinervisAzureClient
     const CODE_SERVER_ERROR = 500;
     const CODE_UNSUPPORTED_MEDIA = 415;
     const CODE_METHOD_NOT_ALLOWED = 405;
+    const CODE_UNKNOWN_ERROR = 600;
 
     private $providerConfig = array();
+    /**
+     * @var int
+     */
+    const LEVEL_INFO = 200;
+    /**
+     * @var int
+     */
+    const LEVEL_WARNING = 300;
+    /**
+     * @var int
+     */
+    const LEVEL_EXCEPTION = 400;
+    /**
+     * @var int
+     */
+    const LEVEL_CRITICAL = 500;
+    /**
+     * @var array
+     */
 
     /**
      * @var string arbitrary secret value
@@ -776,31 +796,58 @@ class MinervisAzureClient
 
         );
         $output = json_decode($this->fetchURL($this->getProviderConfigValue('check_endpoint'), $body, $headers, false));
-        //$this->logger->dump($output);
         $message = '';
+        $status = new Stdclass();
         switch($this->responseCode){
             case self::CODE_NO_CONTENT:
-                return false;
+                $status->status = false;
+                $status->reason = self::CODE_NO_CONTENT;
+                $status->message = "No Content";
+                $status->level = self::LEVEL_INFO;
+                break;
             case self::CODE_OK:
-                return true;
+                $status->status = true;
+                $status->reason = self::CODE_OK;
+                $status->message = "Ok";
+                $status->level = self::LEVEL_INFO;
+                break;
             case self::CODE_INVALID_API_OR_SECRET:
                 $message = 'Status Code '.$this->responseCode . ': Invalid API Key or Secret Key';
+                $status->status = false;
+                $status->reason = self::CODE_INVALID_API_OR_SECRET;
+                $status->message = $message;
+                $status->level = self::LEVEL_EXCEPTION;
                 break;
             case self::CODE_METHOD_NOT_ALLOWED:
                 $message = 'Status Code '.$this->responseCode . ': Method not allowed';
+                $status->status = false;
+                $status->reason = self::CODE_METHOD_NOT_ALLOWED;
+                $status->message = $message;
+                $status->level = self::LEVEL_EXCEPTION;
                 break;
             case self::CODE_SERVER_ERROR:
                 $message = 'Status Code '.$this->responseCode . ': Server error';
+                $status->status = false;
+                $status->reason = self::CODE_SERVER_ERROR;
+                $status->message = $message;
+                $status->level = self::LEVEL_EXCEPTION;
                 break;
             case self::CODE_UNSUPPORTED_MEDIA:
                 $message = 'Status Code '.$this->responseCode . ': Unsupported media type';
+                $status->status = false;
+                $status->reason = self::CODE_UNSUPPORTED_MEDIA;
+                $status->message = $message;
+                $status->level = self::LEVEL_EXCEPTION;
                 break;
 
             default:
+                $status->status = false;
+                $status->reason = self::CODE_UNKNOWN_ERROR;
+                $status->message = 'Status Code '.$this->responseCode . ': Unknown error.';
+                $status->level = self::LEVEL_EXCEPTION;
         }
-        $this->logger->info("Encountered an error with " . $this->responseCode . " : " .$message);
-        throw new MinervisAzureClientException(" Encountered an error with " . $message);
-        return false;
+        //$this->logger->info("Encountered an error with " . $this->responseCode . " : " .$message);
+        return $status;
 
     }
  

@@ -1,5 +1,7 @@
 <?php
 define("AUTH_AZURE", 30);
+
+require_once __DIR__ . "/../vendor/autoload.php";
 require_once 'Services/Authentication/classes/class.ilAuthPlugin.php';
 require_once "Customizing/global/plugins/Services/Authentication/AuthenticationHook/AzureAD/classes/class.ilAzureADProvider.php";
 //require_once("Customizing/global/plugins/Services/Authentication/AuthenticationHook/AzureAD/classes/class.ilAzureADAppEventL.php");

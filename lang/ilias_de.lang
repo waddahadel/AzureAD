@@ -33,3 +33,11 @@ cron_status_subtitle#:#AzureAD Cron
 cron_status_description#:#Prüft, ob ein Benutzer in ILIAS immer noch in AzureAD vorhanden ist. Falls nicht, wird der Benutzer inaktiv gesetzt.
 cron_sync_subtitle#:# Benutzerdaten synchronisieren
 cron_sync_description#:#Der Cron-Job synchronisiert Benutzerdaten in ILIAS mit den in AD
+status_logs#:# Statusprotokoll
+log_usr_id#:# User ID
+log_username#:# Benutzername
+log_delivered_date#:# Zuletzt geliefert
+log_processed_date#:# Zuletzt Bearbeitet
+log_level#:# Niveau
+log_reason#:# Grund
+log_active#:# aktiv

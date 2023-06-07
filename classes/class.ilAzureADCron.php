@@ -1,5 +1,9 @@
 <?php
 
+require_once __DIR__ . "/../vendor/autoload.php";
+use minervis\plugins\AzureAD\Status\StatusLog;
+use minervis\plugins\AzureAD\Utils\AzureADTrait;
+
 include_once("Customizing/global/plugins/Services/Authentication/AuthenticationHook/AzureAD/AzureClient/globusClient.php");
 require_once "Customizing/global/plugins/Services/Authentication/AuthenticationHook/AzureAD/classes/class.ilAzureADSettings.php";
 require_once "Services/Cron/classes/class.ilCronJob.php";
@@ -14,6 +18,7 @@ class ilAzureADCron extends ilCronJob
 
     const CRON_JOB_ID = ilAzureADPlugin::PLUGIN_ID;
     const PLUGIN_CLASS_NAME = ilAzureADPlugin::class;
+    use AzureADTrait;
 
     private $client;
     private $settings;
@@ -117,19 +122,55 @@ class ilAzureADCron extends ilCronJob
             if(!$this->settings->getActive()){
                 throw new Exception("Synchronization with AzureAD is not activate. Please contact admin");
             }
-            $users =  $this->settings->getAllADUsers();
+            $users =  $this->settings->getAllADUsers(false);
+            /*$users = [
+                ['ext_account' => 'ext.a.rashid@globus.net', 'usr_id' => ilObjUser::getUserIdByLogin('ext.a.rashid@globus.net')],
+                ['ext_account' => 'andrea.schmidt@globus.net', 'usr_id' => ilObjUser::getUserIdByLogin("andrea.schmidt@globus.net")],
+                ['ext_account' => 'se.klein@globus.net', 'usr_id' => ilObjUser::getUserIdByLogin("se.klein@globus.net")],
+                ['ext_account' => 'm.alahmadosman@globus.net', 'usr_id' => ilObjUser::getUserIdByLogin('m.alahmadosman@globus.net')]
+            ];*/
             $DIC->logger()->root()->info("A total of " . count($users) . " will be checked");
+            $progress_counter = 0;
             foreach($users as $user){
+                $progress_counter ++;
                 $result = $this->client->checkUserDeleted($user['ext_account']);
-                if(!$result){
+                $reactivate = ($user['active'] == 0 and $result->status);
+
+                if(!$result->status || $reactivate){
+                    if($user['usr_id'] == 0) continue;
                     $user = new ilObjUser($user['usr_id']);
-                    $user->setActive(false);
+                    $user->setActive((bool) $result->status);
                     $user->update();
+                    $status_log = self::status()->getLogByUserId($user->getId());
+
+
+                    $delivery_date = new ilDateTime(time(), IL_CAL_UNIX);
+                    $new_entry = ($status_log->getUsrId() == 0);
+                    if($new_entry){ //new entry
+                        $status_log->withProcessedDate($delivery_date);
+                    }
+
+                    $status_log->withStatus((int)$result->status)
+                        ->withLevel($result->level)
+                        ->withReason($result->message)
+                        ->withUsrId($user->getId())
+                        ->withUsername($user->getLogin())
+                        ->withDeliveredDate($delivery_date)
+                    ;
+                    if(!$new_entry && $result->status != $status_log->getStatus()){
+                        $status_log->withProcessedDate(new ilDateTime(time(), IL_CAL_UNIX));
+                    }
+                    $status_log->store();
                 }
+                if($progress_counter%100 == 0){
+                    $DIC->logger()->root()->info("Azure AD status Cron Progress:  " . ceil($progress_counter*100/count($users)) . "%");
+                }
+
             }
             $cron_result->setStatus(ilCronJobResult::STATUS_OK);
         } catch (Exception $e) {
             $DIC->logger()->root()->info($e->getMessage());
+            $cron_result->setMessage($e->getMessage());
             $cron_result->setStatus(ilCronJobResult::STATUS_FAIL);
         }
         

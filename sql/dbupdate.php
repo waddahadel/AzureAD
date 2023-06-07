@@ -74,4 +74,8 @@ if (!$ilDB->tableColumnExists("auth_authhk_azuread", "secretkey")){
 	));
 }
 ?>
+<#3>
+<?php
+\minervis\plugins\AzureAD\Status\Repository::getInstance()->installTables();
+?>
 

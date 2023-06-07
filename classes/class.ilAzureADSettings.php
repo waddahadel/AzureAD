@@ -409,21 +409,24 @@ class ilAzureADSettings
         return false;
     }
 
-    public function getAllADUsers($load_active_only = true)
+    public function getAllADUsers($load_active_only = true): array
     {
         global $DIC;
 
         $ilDB = $DIC['ilDB'];
         //remember to revert to the initial query: retrieveing the ext account from login and ext_account
-        $query = 'SELECT usr_id, (CASE WHEN ext_account LIKE ' . $ilDB->quote('%@globus.net', 'text') . ' THEN ext_account ELSE login END )AS ext_account FROM usr_data  WHERE ' .
-            '  login LIKE ' . $ilDB->quote('%@globus.%', 'text') .
-            ' AND active = '. $ilDB->quote(intval($load_active_only), 'integer');
+        $query = 'SELECT usr_id, active, (CASE WHEN ext_account LIKE ' . $ilDB->quote('%@globus.net', 'text') . ' THEN ext_account ELSE login END )AS ext_account FROM usr_data  WHERE ' .
+            '  login LIKE ' . $ilDB->quote('%@globus.%', 'text');
+        if($load_active_only){
+            $query .= ' AND active = '. $ilDB->quote(intval($load_active_only), 'integer');
+        }
         $res = $ilDB->query($query);
         $data = null;
         while ($row = $ilDB->fetchAssoc($res)) {
             $data [] = array(
                 'usr_id' => $row['usr_id'],
-                'ext_account' => $row['ext_account']
+                'ext_account' => $row['ext_account'],
+                'active' => $row['active']
             );
         }
         return $data;
