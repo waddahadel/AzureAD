@@ -29,5 +29,15 @@ secretkey#:#Secret Key
 run_sync#:# Synchronise
 tab_status#:#Summary
 tab_general_settings#:# General Settings
-cron_title#:#AzureAD Cron
-cron_description#:#Checks if a user in ILIAS is still available in the remote AzureAD Userbase. If no, the user will be set inactive.
+cron_status_subtitle#:#User status in AzureAD
+cron_status_description#:#Checks if a user in ILIAS is still available in the remote AzureAD Userbase. If no, the user will be set inactive.
+cron_sync_subtitle#:# Synchronize  user data
+cron_sync_description#:#The cron will synchronize the user data between AzureAD and ILIAS.
+status_logs#:# Status logs
+log_usr_id#:# User ID
+log_username#:# Username
+log_delivered_date#:# Last delivered
+log_processed_date#:# Last processed
+log_level#:# Level
+log_reason#:# Reason
+log_active#:# active

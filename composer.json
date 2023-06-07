@@ -1,0 +1,39 @@
+{
+  "name": "minervis/azuread",
+  "description": "ILIAS-AzureAD Integration",
+  "type": "project",
+  "keywords": [
+    "ILIAS",
+    "Plugin"
+  ],
+  "authors": [
+    {
+      "name": "Jephte Abijuru",
+      "email": "jephte.abijuru@minervis.com",
+      "role": "Developer"
+    }
+  ],
+  "support": {
+    "email": "jephte.abijuru@minervis.com"
+  },
+  "require": {
+    "php": ">=7.2"
+  },
+  "autoload": {
+    "psr-4": {
+      "minervis\\plugins\\AzureAD\\": "src/"
+    },
+    "classmap": [
+      "classes/"
+    ]
+  },
+  "config": {
+    "classmap-authoritative": true,
+    "optimize-autoloader": true,
+    "sort-packages": true
+  },
+  "scripts": {
+    "pre-autoload-dump": [
+    ]
+  }
+}

@@ -172,7 +172,7 @@ class ilAzureADSettings
             $this->setSessionDuration($record['session_duration']);
             $this->setRole($record['role']);
             $sync= boolval($record['sync_allowed']);
-            $this->syncAllowed($sync!=null?$sync:1);
+            $this->syncAllowed($sync);
             $this->connection_id = $record['id'];
             $this->values=$record;
         }
@@ -409,20 +409,24 @@ class ilAzureADSettings
         return false;
     }
 
-    public function getAllADUsers($load_active_only = true)
+    public function getAllADUsers($load_active_only = true): array
     {
         global $DIC;
 
         $ilDB = $DIC['ilDB'];
-        $query = 'SELECT usr_id, ext_account FROM usr_data ' .
-            'WHERE ext_account LIKE ' . $ilDB->quote('%@globus.net', 'text') .
-            'AND active = '. $ilDB->quote(intval($load_active_only), 'integer');
+        //remember to revert to the initial query: retrieveing the ext account from login and ext_account
+        $query = 'SELECT usr_id, active, (CASE WHEN ext_account LIKE ' . $ilDB->quote('%@globus.net', 'text') . ' THEN ext_account ELSE login END )AS ext_account FROM usr_data  WHERE ' .
+            '  login LIKE ' . $ilDB->quote('%@globus.%', 'text');
+        if($load_active_only){
+            $query .= ' AND active = '. $ilDB->quote(intval($load_active_only), 'integer');
+        }
         $res = $ilDB->query($query);
         $data = null;
         while ($row = $ilDB->fetchAssoc($res)) {
             $data [] = array(
                 'usr_id' => $row['usr_id'],
-                'ext_account' => $row['ext_account']
+                'ext_account' => $row['ext_account'],
+                'active' => $row['active']
             );
         }
         return $data;

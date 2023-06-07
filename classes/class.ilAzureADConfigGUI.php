@@ -1,6 +1,12 @@
 <?php
+require_once __DIR__ . "/../vendor/autoload.php";
+
+use minervis\plugins\AzureAD\Status\StatusLogsGUI;
+use minervis\plugins\AzureAD\Status\StatusLogsTableGUI;
+use minervis\plugins\AzureAD\Utils\AzureADTrait;
 
 require_once "Customizing/global/plugins/Services/Authentication/AuthenticationHook/AzureAD/classes/class.ilAzureADSettings.php";
+
 /**
  * Class ilAzureADConfigGUI
  *
@@ -9,15 +15,22 @@ require_once "Customizing/global/plugins/Services/Authentication/AuthenticationH
 class ilAzureADConfigGUI extends ilPluginConfigGUI
 {
     const PLUGIN_CLASS_NAME = ilAzureADPlugin::class;
+    use AzureADTrait;
     const CMD_CONFIGURE = "configure";
     const CMD_UPDATE_CONFIGURE = "updateConfigure";
     const LANG_MODULE = "config";
     const TAB_CONFIGURATION = "configuration";
     const CMD_SAVE = "save";
     const CMD_SYNCHRONIZE = "synchronize";
+    const CMD_RETRIEVE_USERDATA = "retrieveUsers";
+    const CMD_SHOW_LOGS = "showLogs";
     const CMD_STATUS = "status";
+    const CMD_LOGS_APPLY_FILTER = "applyFilter";
+    const CMD_LOGS_RESET_FILTER = "resetFilter";
+    const CMD_LOGS_INDEX = "index";
     const SUBTAB_SETTINGS = "settings";
     const SUBTAB_STATUS = "status";
+    const TAB_LOGS = "logs";
     /**
      * @var \ilLogger
      */
@@ -47,6 +60,12 @@ class ilAzureADConfigGUI extends ilPluginConfigGUI
      */
     protected static $instance = null;
     /**
+     * @var \ILIAS\DI\Container|mixed
+     */
+    private  $dic;
+    private ilTabsGUI $tabs;
+
+    /**
      * @return self
      */
     public static function getInstance() : self
@@ -66,6 +85,10 @@ class ilAzureADConfigGUI extends ilPluginConfigGUI
     public function __construct()
     {
         global $DIC;
+        $this->dic = $DIC;
+        $this->ui = $DIC->ui();
+        $this->tpl = $DIC->ui()->mainTemplate();
+        $this->tabs = $DIC->tabs();
         $this->access = $DIC->access();
         $this->review = $DIC->rbac()->review();
         $this->settings = ilAzureADSettings::getInstance();
@@ -84,6 +107,9 @@ class ilAzureADConfigGUI extends ilPluginConfigGUI
         $next_class = $ilCtrl->getNextClass($this);
 
         switch (strtolower($next_class)) {
+            case  strtolower(StatusLogsGUI::class):
+                $logs_gui = new StatusLogsGUI();
+                $DIC->ctrl()->forwardCommand($logs_gui);
             default:
                 $cmd = $ilCtrl->getCmd();
 
@@ -93,6 +119,11 @@ class ilAzureADConfigGUI extends ilPluginConfigGUI
                     case self::CMD_SAVE:
                     case self::CMD_SYNCHRONIZE:
                     case self::CMD_STATUS:
+                    case self::CMD_RETRIEVE_USERDATA:
+                    case self::CMD_SHOW_LOGS:
+                    case self::CMD_LOGS_INDEX:
+                    case self::CMD_LOGS_APPLY_FILTER:
+                    case self::CMD_LOGS_RESET_FILTER:
                         $this->{$cmd}();
                         break;
 
@@ -123,6 +154,10 @@ class ilAzureADConfigGUI extends ilPluginConfigGUI
 
         $DIC->tabs()->addSubTab(self::SUBTAB_STATUS, $this->getPluginObject()->txt("tab_status"), $DIC->ctrl()
             ->getLinkTarget($this, self::SUBTAB_STATUS));
+        $DIC->tabs()->addSubTab(self::TAB_LOGS, $this->getPluginObject()->txt("status_logs"), $DIC->ctrl()
+            ->getLinkTarget($this, self::CMD_LOGS_INDEX));
+        /*$DIC->tabs()->addTab(StatusLogsGUI::TAB_STATUS_LOGS, $this->getPluginObject()->txt("logs"), $DIC->ctrl()
+            ->getLinkTargetByClass(StatusLogsGUI::class, StatusLogsGUI::CMD_INDEX));*/
     }
 
 
@@ -139,6 +174,12 @@ class ilAzureADConfigGUI extends ilPluginConfigGUI
 
 
         $tpl->setContent($this->form->getHTML());
+    }
+    protected function showLogs()
+    {
+        global $DIC; /** @var Container $DIC */
+        $tpl = $DIC->ui()->mainTemplate();
+        $tpl->setContent(self::status()->factory()->getLogsTableGUI($this->plugin_object, $this, "")->getHTML());
     }
     /**
      * Init configuration form.
@@ -164,10 +205,10 @@ class ilAzureADConfigGUI extends ilPluginConfigGUI
         $button->setCommand(self::CMD_SYNCHRONIZE);
         $DIC->toolbar()->addButtonInstance($button);
 
-        // $button = ilSubmitButton::getInstance();
-        // $button->setCaption($pl->txt('status'), false);
-        // $button->setCommand(self::CMD_STATUS);
-        // $DIC->toolbar()->addButtonInstance($button);
+        $button = ilSubmitButton::getInstance();
+        $button->setCaption('synchronize user data', false);
+        $button->setCommand(self::CMD_RETRIEVE_USERDATA);
+        $DIC->toolbar()->addButtonInstance($button);
         
         include_once("Services/Form/classes/class.ilPropertyFormGUI.php");
         $this->form=new ilPropertyFormGUI();
@@ -247,7 +288,7 @@ class ilAzureADConfigGUI extends ilPluginConfigGUI
 
         $cb = new ilCheckboxInputGUI($pl->txt("sync_allowed"), "sync_allowed");
         $cb->setRequired(false);
-        $cb->setValue((int) $values['sync_allowed']);
+        $is_active->setChecked((bool) $values['sync_allowed']);
         //$cb->setInfo($pl->txt("sync_allowed"));
         $this->form->addItem($cb);
     
@@ -341,7 +382,42 @@ class ilAzureADConfigGUI extends ilPluginConfigGUI
         $ilCtrl->redirect($this, "configure");
 
     }
-    public function status()
+    public function retrieveUsers()
     {
+        global $ilCtrl;
+
+        include_once("Customizing/global/plugins/Services/Authentication/AuthenticationHook/AzureAD/classes/class.ilAzureADCronSyncUserData.php");
+        $job = new ilAzureADCronSyncUserData();
+        $results =  $job->run();
+        $ilCtrl->redirect($this, "configure");
+
+    }
+
+    public function applyFilter(): void
+    {
+        $table = $this->getLogsTable(self::CMD_LOGS_APPLY_FILTER);
+        $table->writeFilterToSession();
+        $table->resetOffset();
+        $this->index();
+
+    }
+    public function resetFilter(): void
+    {
+        $table = $this->getLogsTable(self::CMD_LOGS_RESET_FILTER);
+        $table->resetFilter();
+        $table->resetOffset();
+        $this->index();
+
+    }
+    public  function index(): void
+    {
+        $this->tabs->activateSubTab(self::TAB_LOGS);
+        $table = $this->getLogsTable();
+        $this->tpl->setContent($table->getHTML());
+
+    }
+    private function getLogsTable($cmd = self::CMD_LOGS_INDEX): StatusLogsTableGUI
+    {
+        return self::status()->factory()->getLogsTableGUI($this->getPluginObject(), $this, $cmd);
     }
 }

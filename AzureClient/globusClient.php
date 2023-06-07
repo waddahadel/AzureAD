@@ -1,12 +1,6 @@
 <?php
 
-
-// namespace Minervis;
-
-
-// if (!class_exists('\phpseclib\Crypt\RSA') && !class_exists('Crypt_RSA')) {
-//     user_error('Unable to find phpseclib Crypt/RSA.php.  Ensure phpseclib is installed and in include_path before you include this file');
-// }
+require_once "Customizing/global/plugins/Services/Authentication/AuthenticationHook/AzureAD/AzureClient/ADRequest.php";
 
 /**
  * A wrapper around base64_decode which decodes Base64URL-encoded data,
@@ -14,7 +8,7 @@
  * @param string $base64url
  * @return bool|string
  */
-function base64url_decode($base64url)
+function base64url_decode(string $base64url)
 {
     return base64_decode(b64url2b64($base64url));
 }
@@ -27,7 +21,7 @@ function base64url_decode($base64url)
  * @param string $base64url
  * @return string
  */
-function b64url2b64($base64url)
+function b64url2b64(string $base64url): string
 {
     // "Shouldn't" be necessary, but why not
     $padding = strlen($base64url) % 4;
@@ -69,8 +63,28 @@ class MinervisAzureClient
     const CODE_SERVER_ERROR = 500;
     const CODE_UNSUPPORTED_MEDIA = 415;
     const CODE_METHOD_NOT_ALLOWED = 405;
+    const CODE_UNKNOWN_ERROR = 600;
 
     private $providerConfig = array();
+    /**
+     * @var int
+     */
+    const LEVEL_INFO = 200;
+    /**
+     * @var int
+     */
+    const LEVEL_WARNING = 300;
+    /**
+     * @var int
+     */
+    const LEVEL_EXCEPTION = 400;
+    /**
+     * @var int
+     */
+    const LEVEL_CRITICAL = 500;
+    /**
+     * @var array
+     */
 
     /**
      * @var string arbitrary secret value
@@ -142,15 +156,18 @@ class MinervisAzureClient
     private $redirectURL;
 
     protected $enc_type = PHP_QUERY_RFC1738;
+    /**
+     * @var mixed|string
+     */
+    private $proxy;
 
     /**
-     * @param $provider_url string optional
+     * @param $provider_url string|null optional
      *
-     * @param $client_id string optional
-     * @param $client_secret string optional
-     * @param null $issuer
-     */
-    public function __construct($provider_url = null, $api_key = null, $secret_key=null)
+     * @param $api_key string optional
+     * @param $secret_key string optional
+ */
+    public function __construct(string $provider_url = null, $api_key = null, $secret_key = null, $proxy = '')
     {
 	global $DIC;
         $this->clientLogger=$DIC->logger()->root();
@@ -158,7 +175,9 @@ class MinervisAzureClient
         $this->setApiKey($api_key);
         $this->setSecretKey($secret_key);
         $this->setEndpoints();
+        $this->setProxy($proxy);
         $this->logger = ilLoggerFactory::getLogger('MinervisAzureClient');
+        //$this->logger->dump($this->providerConfig);
     }
     
 
@@ -168,6 +187,11 @@ class MinervisAzureClient
     public function setProviderURL($provider_url)
     {
         $this->providerConfig['providerUrl'] = $provider_url;
+    }
+
+    public function setProxy($proxy)
+    {
+        $this->providerConfig['proxy'] = $proxy;
     }
     
     /**
@@ -209,15 +233,18 @@ class MinervisAzureClient
     }
 
 
-
-    
+    /**
+     * @return void
+     */
     private function setEndpoints()
     {
         $providerUrl=$this->providerConfig['providerUrl'];
-        $this->providerConfig['refresh_endpoint']=$providerUrl."/v1/ilias/app/azure/refresh";
-        $this->providerConfig['token_endpoint']=$providerUrl."/v1/ilias/app/azure/login";
-        $this->providerConfig['verify_endpoint']=$providerUrl."/v1/ilias/app/azure/verify";
-        $this->providerConfig['check_endpoint']=$providerUrl."/v1/ilias/app/azure/check";
+        $this->providerConfig['refresh_endpoint']= $providerUrl . "/v1/ilias/app/azure/refresh";
+        $this->providerConfig['token_endpoint']= $providerUrl . "/v1/ilias/app/azure/login";
+        $this->providerConfig['verify_endpoint']= $providerUrl . "/v1/ilias/app/azure/verify";
+        $this->providerConfig['check_endpoint']= $providerUrl . "/v1/ilias/app/azure/check";
+        $this->providerConfig['sync_endpoint']= $providerUrl . "/v1/ilias/app/azure/users";
+        $this->providerConfig['single_user_endpoint']= $providerUrl . "/v1/ilias/app/azure/user";
     }
 
     public function configureInternalProxy()
@@ -247,7 +274,7 @@ class MinervisAzureClient
         if (isset($_REQUEST['code'])) {
             // echo "found request code";
             $code = $_REQUEST['code'];
-            //$token_json = $this->requestTokens($code);
+            $token_json = $this->requestTokens($code);
 
             // Throw an error if the server returns one
             if (isset($token_json->error)) {
@@ -419,6 +446,89 @@ class MinervisAzureClient
     }
 
     /**
+     * @throws MinervisAzureClientException
+     */
+    public  function retrieveUsers($top = 100, $skip_token = '') {
+        global $DIC;
+        $users_endpoint = $this->getProviderConfigValue('sync_endpoint');
+        $body_params = array( 'top' => (string) $top);
+        if(!empty($skip_token)){
+            $body_params["skiptoken"] = $skip_token;
+        }
+        $headers=array(
+            'Content-Type: application/json',
+            'APIKey:  '. $this->getProviderConfigValue('api_key'),
+            'APISecret: '. $this->getProviderConfigValue('secret_key')
+
+        );
+        $response = $this->fetchURL($users_endpoint, $body_params, $headers, false);
+        $this->handleStatus($this->responseCode);
+        return json_decode($response);
+       /* $request = new ADRequest(
+            $users_endpoint,
+            $headers,
+            $body_params,
+            ADRequest::GET_METHOD,
+            "www-proxy.vpn.minervis.com:3128"
+        );
+
+        $response = $request->send();
+        $DIC->logger()->root()->dump($response->getBody());*/
+    }
+
+        /**
+     * @throws MinervisAzureClientException
+     */
+    public  function retrieveSingleUser($user) {
+        global $DIC;
+        $users_endpoint = $this->getProviderConfigValue('single_user_endpoint');
+        $body_params = array( 'user' => (string) $user);
+        $headers=array(
+            'Content-Type: application/json',
+            'APIKey:  '. $this->getProviderConfigValue('api_key'),
+            'APISecret: '. $this->getProviderConfigValue('secret_key')
+
+        );
+        $response = $this->fetchURL($users_endpoint, $body_params, $headers, false);
+        $this->handleStatus($this->responseCode);
+        return json_decode($response);
+    }
+
+    /**
+     * @param int $status_code
+     * @return void
+     * @throws MinervisAzureClientException
+     */
+    public function handleStatus(int $status_code){
+        $message = '';
+        switch($status_code){
+            case self::CODE_INVALID_API_OR_SECRET:
+                if($this->tokenResponse){
+                    $message = 'Status Code '.$status_code . ': Invalid  API or Secret';
+                }else{
+                    $message = 'Status Code '.$status_code . ': Invalid Login credentials';
+                    $this->login_success = false;
+                }
+                break;
+            case self::CODE_METHOD_NOT_ALLOWED:
+                $message = 'Status Code '.$status_code . ': Method not allowed';
+                break;
+            case self::CODE_SERVER_ERROR:
+                $message = 'Status Code '.$status_code . ': Server error';
+                break;
+            case self::CODE_UNSUPPORTED_MEDIA:
+                $message = 'Status Code '.$status_code. ': Unsupported media type';
+                break;
+
+            default:
+        }
+        if($message){
+            $this->logger->info($message);
+            throw new MinervisAzureClientException($message);
+        }
+    }
+
+    /**
      * Requests ID and Access tokens
      *
      * @param string $code
@@ -433,7 +543,7 @@ class MinervisAzureClient
             'user'=>str_replace(' ','',$_REQUEST['username']),
             'password'=>$_REQUEST['password']
         ];
-        $this->tokenResponse = json_decode($this->fetchURL($token_endpoint, $token_params, null));
+        $this->tokenResponse = json_decode($this->fetchURL($token_endpoint, $token_params, array()));
         //var_dump($this->tokenResponse);
         $message = '';
         switch($this->responseCode){
@@ -525,7 +635,7 @@ class MinervisAzureClient
 
         
 
-        $json = json_decode($this->fetchURL($token_endpoint, $token_params, null));
+        $json = json_decode($this->fetchURL($token_endpoint, $token_params, array()));
 
         if ($this->getResponseCode()<>400) {
             return false;
@@ -539,19 +649,6 @@ class MinervisAzureClient
         return $this->userInfo;
     }
 
-    /**
-     * @param array $keys
-     * @param array $header
-     * @throws MinervisAzureClientException
-     * @return object
-     */
-    private function get_key_for_header($keys, $header)
-    {
-        return null;
-    }
-
-
-  
 
     /**
      * @param string $str
@@ -570,7 +667,7 @@ class MinervisAzureClient
      * @param int $section the section we would like to decode
      * @return object
      */
-    protected function decodeJWT($jwt, $section = 0)
+    protected function decodeJWT(string $jwt, int $section = 0): object
     {
         $parts = explode('.', $jwt);
         return json_decode(base64url_decode($parts[$section]));
@@ -582,14 +679,14 @@ class MinervisAzureClient
 
     /**
      * @param string $url
-     * @param string | null $post_body string If this is set the post type will be POST
+     * @param array | null $post_body string If this is set the post type will be POST
      * @param array $headers Extra headers to be send with the request. Format as 'NameHeader: ValueHeader'
-     * @throws MinervisAzureClientException
      * @return mixed
+     *@throws MinervisAzureClientException
      */
-    protected function fetchURL($url, $post_body = null, $headers = array(), $method_post = true)
+    protected function fetchURL(string $url, array $post_body = null, array $headers = array(), $method_post = true)
     {
-        $proxy="www-proxy.vpn.minervis.com:3128";
+        $proxy = $this->getProviderConfigValue('proxy');
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $url);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
@@ -607,7 +704,7 @@ class MinervisAzureClient
         curl_setopt($ch, CURLOPT_PROXY, $proxy);
         curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-        if (!isset($headers)) {
+        if (!isset($headers) || count($headers) == 0) {
             $headers=array(
                 'Content-Type: application/json',
                 'APIKey:  '. $this->getProviderConfigValue('api_key'),
@@ -692,32 +789,65 @@ class MinervisAzureClient
         $body = array(
             "user" => $ext_account
         );
-        $output = json_decode($this->fetchURL($this->getProviderConfigValue('check_endpoint'), $body, null, false));
-        $this->logger->dump($output);
+        $headers=array(
+            'Content-Type: application/json',
+            'APIKey:  '. $this->getProviderConfigValue('api_key'),
+            'APISecret: '. $this->getProviderConfigValue('secret_key')
+
+        );
+        $output = json_decode($this->fetchURL($this->getProviderConfigValue('check_endpoint'), $body, $headers, false));
         $message = '';
+        $status = new Stdclass();
         switch($this->responseCode){
             case self::CODE_NO_CONTENT:
-                return false;
+                $status->status = false;
+                $status->reason = self::CODE_NO_CONTENT;
+                $status->message = "No Content";
+                $status->level = self::LEVEL_INFO;
+                break;
             case self::CODE_OK:
-                return true;
+                $status->status = true;
+                $status->reason = self::CODE_OK;
+                $status->message = "Ok";
+                $status->level = self::LEVEL_INFO;
+                break;
             case self::CODE_INVALID_API_OR_SECRET:
                 $message = 'Status Code '.$this->responseCode . ': Invalid API Key or Secret Key';
+                $status->status = false;
+                $status->reason = self::CODE_INVALID_API_OR_SECRET;
+                $status->message = $message;
+                $status->level = self::LEVEL_EXCEPTION;
                 break;
             case self::CODE_METHOD_NOT_ALLOWED:
                 $message = 'Status Code '.$this->responseCode . ': Method not allowed';
+                $status->status = false;
+                $status->reason = self::CODE_METHOD_NOT_ALLOWED;
+                $status->message = $message;
+                $status->level = self::LEVEL_EXCEPTION;
                 break;
             case self::CODE_SERVER_ERROR:
                 $message = 'Status Code '.$this->responseCode . ': Server error';
+                $status->status = false;
+                $status->reason = self::CODE_SERVER_ERROR;
+                $status->message = $message;
+                $status->level = self::LEVEL_EXCEPTION;
                 break;
             case self::CODE_UNSUPPORTED_MEDIA:
                 $message = 'Status Code '.$this->responseCode . ': Unsupported media type';
+                $status->status = false;
+                $status->reason = self::CODE_UNSUPPORTED_MEDIA;
+                $status->message = $message;
+                $status->level = self::LEVEL_EXCEPTION;
                 break;
 
             default:
+                $status->status = false;
+                $status->reason = self::CODE_UNKNOWN_ERROR;
+                $status->message = 'Status Code '.$this->responseCode . ': Unknown error.';
+                $status->level = self::LEVEL_EXCEPTION;
         }
-        $this->logger->info("Encountered an error with " . $message);
-        throw new MinervisAzureClientException(" Encountered an error with " . $message);
-        return false;
+        //$this->logger->info("Encountered an error with " . $this->responseCode . " : " .$message);
+        return $status;
 
     }
  
