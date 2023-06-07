@@ -221,7 +221,7 @@ class ilAzureADProvider extends ilAuthProvider implements ilAuthProviderInterfac
         if($db->numRows($res) > 1 and $safety_check){
             throw new Exception("The employeeID is duplicate in the database.");
         }
-        $this->getLogger()->info('User id/employeeid : '. $usr_id . '/'  . $udf_value);
+        $this->getLogger()->debug('User id/employeeid : '. $usr_id . '/'  . $udf_value);
         return $usr_id;
     }
 

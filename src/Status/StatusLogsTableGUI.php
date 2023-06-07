@@ -35,6 +35,8 @@ class StatusLogsTableGUI extends ilTable2GUI
         $this->setFormAction($DIC->ctrl()->getFormAction($parent_obj, "applyFilter"));
         $this->initColumns();
         $this->setRowTemplate("tpl.status_row.html", $this->plugin_obj->getDirectory());
+        $this->setDefaultOrderField("delivered_date");
+        $this->setDefaultOrderDirection("desc");
         $this->setLimit(100);
         $this->initFilter();
         $this->parseData();
