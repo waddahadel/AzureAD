@@ -123,19 +123,13 @@ class ilAzureADCron extends ilCronJob
                 throw new Exception("Synchronization with AzureAD is not activate. Please contact admin");
             }
             $users =  $this->settings->getAllADUsers(false);
-            /*$users = [
-                ['ext_account' => 'ext.a.rashid@globus.net', 'usr_id' => ilObjUser::getUserIdByLogin('ext.a.rashid@globus.net')],
-                ['ext_account' => 'andrea.schmidt@globus.net', 'usr_id' => ilObjUser::getUserIdByLogin("andrea.schmidt@globus.net")],
-                ['ext_account' => 'se.klein@globus.net', 'usr_id' => ilObjUser::getUserIdByLogin("se.klein@globus.net")],
-                ['ext_account' => 'm.alahmadosman@globus.net', 'usr_id' => ilObjUser::getUserIdByLogin('m.alahmadosman@globus.net')]
-            ];*/
             $DIC->logger()->root()->info("A total of " . count($users) . " will be checked");
             $progress_counter = 0;
             foreach($users as $user){
                 $progress_counter ++;
                 $result = $this->client->checkUserDeleted($user['ext_account']);
                 $reactivate = ($user['active'] == 0 and $result->status);
-
+                $DIC->logger()->root()->debug($progress_counter . ": Checking Status for User  " . $user['ext_account'] . ": ". $result->status);
                 if(!$result->status || $reactivate){
                     if($user['usr_id'] == 0) continue;
                     $user = new ilObjUser($user['usr_id']);
