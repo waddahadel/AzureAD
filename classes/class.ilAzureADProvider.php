@@ -90,7 +90,7 @@ class ilAzureADProvider extends ilAuthProvider implements ilAuthProviderInterfac
         $azure = null;
         try {
             $azure = $this->initClient($this->settings->getProvider(), $this->settings->getApiKey(), $this->settings->getSecretKey());
-            $azure->setRedirectURL(ILIAS_HTTP_PATH . 'Customizing/global/plugins/Services/Authentication/AuthenticationHook/AzureAD/azurepage.php');
+            //$azure->setRedirectURL(ILIAS_HTTP_PATH . 'Customizing/global/plugins/Services/Authentication/AuthenticationHook/AzureAD/azurepage.php');
             $azure->authenticate();
             // user is authenticated, otherwise redirected to authorization endpoint or exception
             $claims = $azure->getUserInfo();
@@ -133,7 +133,7 @@ class ilAzureADProvider extends ilAuthProvider implements ilAuthProviderInterfac
             return $status;
         }
 
-        //$this->getLogger()->dump($user_info, ilLogLevel::DEBUG);
+        //$this->getLogger()->dump($user_info, ilLogLevel::INFO);
         //$uid_field = $this->settings->getUidField();
         $ext_account = $user_info->unique_name;
        
@@ -145,7 +145,7 @@ class ilAzureADProvider extends ilAuthProvider implements ilAuthProviderInterfac
         }
         $shouldMigrate = false;
         if($usr_id_udf == 0){
-            $this->getLogger()->debug('The User id for the given emplyeeid was not found, using the login name');
+            $this->getLogger()->info('The User id for the given emplyeeid was not found, using the login name');
             $int_account = ilObjUser::_checkExternalAuthAccount(
                 ilAzureADUserSync::AUTH_MODE,
                 $ext_account
@@ -160,9 +160,9 @@ class ilAzureADProvider extends ilAuthProvider implements ilAuthProviderInterfac
         }
         if (strlen($int_account) !== 0) {
             $shouldMigrate = true;
-            $this->getLogger()->debug('Should Migrate: '.$shouldMigrate);
+            $this->getLogger()->info('Should Migrate: '.$shouldMigrate);
         }
-        $this->getLogger()->debug('Internal account: ' . $int_account);
+        $this->getLogger()->info('Internal account: ' . $int_account);
 
         try {
             $sync = new ilAzureADUserSync($this->settings, $user_info);
@@ -175,7 +175,7 @@ class ilAzureADProvider extends ilAuthProvider implements ilAuthProviderInterfac
             $sync->setMigrationState($shouldMigrate);
             $sync->setExternalAccount($ext_account);
             $sync->setInternalAccount($int_account);
-            if(!$sync->needsCreation()){
+            if($shouldMigrate || !$sync->needsCreation()){
                 $sync->setUserId(ilObjUser::_lookupId($int_account));
             }
             if($this->settings->isSyncAllowed()){
@@ -221,7 +221,7 @@ class ilAzureADProvider extends ilAuthProvider implements ilAuthProviderInterfac
         if($db->numRows($res) > 1 and $safety_check){
             throw new Exception("The employeeID is duplicate in the database.");
         }
-        $this->getLogger()->debug('User id/employeeid : '. $usr_id . '/'  . $udf_value);
+        $this->getLogger()->info('User id/employeeid : '. $usr_id . '/'  . $udf_value);
         return $usr_id;
     }
 

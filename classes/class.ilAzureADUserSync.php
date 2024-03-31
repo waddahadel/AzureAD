@@ -155,15 +155,15 @@ class ilAzureADUserSync
         $importParser->setFolderId(USER_FOLDER_ID);
         $importParser->startParsing();
         $debug = $importParser->getProtocol();
-
-
         // lookup internal account
         $int_account = ilObjUser::_checkExternalAuthAccount(
             self::AUTH_MODE,
             $this->ext_account
         );
         $this->setInternalAccount($int_account);
-        $this->setUserId(ilObjUser::_lookupId($int_account));
+       if (!$this->getMigrationState()){
+          $this->setUserId(ilObjUser::_lookupId($int_account));
+       }
         return true;
     }
 
@@ -179,7 +179,6 @@ class ilAzureADUserSync
             $login=$this->user_info->unique_name;
         }
         $this->writer->xmlStartTag('Users');
-        
         if ($this->needsCreation()) {
             $this->writer->xmlStartTag('User', ['Action' => 'Insert']);
             $this->writer->xmlElement('Login', [], ilAuthUtils::_generateLogin($this->ext_account));
@@ -294,6 +293,6 @@ class ilAzureADUserSync
         $this->writer->xmlEndTag('User');
         $this->writer->xmlEndTag('Users');
 
-        $this->logger->debug("User XML: ".$this->writer->xmlDumpMem());
+        //$this->logger->debug("User XML: ".$this->writer->xmlDumpMem());
     }
 }
